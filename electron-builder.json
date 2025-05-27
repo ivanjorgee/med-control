@@ -1,0 +1,24 @@
+
+{
+  "appId": "com.cura.saude.central",
+  "productName": "Cura Saúde Central",
+  "directories": {
+    "output": "dist-electron"
+  },
+  "files": [
+    "dist/**/*",
+    "electron-dist/**/*"
+  ],
+  "mac": {
+    "category": "public.app-category.medical",
+    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png"
+  },
+  "win": {
+    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png"
+  },
+  "linux": {
+    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png",
+    "category": "Office;Healthcare",
+    "target": ["AppImage", "deb"]
+  }
+}
