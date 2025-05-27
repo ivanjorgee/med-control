@@ -1,4 +1,3 @@
-
 import { DEFAULT_USERS, DEFAULT_LOCATIONS } from "./defaultData";
 
 export const initializeDefaultData = () => {
@@ -31,6 +30,12 @@ export const resetDefaultData = () => {
   localStorage.setItem("medcontrol_locations", JSON.stringify(DEFAULT_LOCATIONS));
   localStorage.setItem("medcontrol-setup-complete", "true");
   console.log("✅ Dados resetados com sucesso");
+};
+
+export const forceUpdateUserData = () => {
+  console.log("=== FORÇANDO ATUALIZAÇÃO DOS DADOS DE USUÁRIO ===");
+  localStorage.setItem("users", JSON.stringify(DEFAULT_USERS));
+  console.log("✅ Dados de usuário atualizados com a versão mais recente");
 };
 
 export const getLocationName = (locationId: string): string => {

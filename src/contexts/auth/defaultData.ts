@@ -6,7 +6,7 @@ export const DEFAULT_USERS: DefaultUser[] = [
   {
     id: "admin-001",
     name: "Administrador do Sistema",
-    email: "smss.sjapa@gmail.com", // Corrigido para incluir o 's' extra
+    email: "smss.sjapa@gmail.com", // Corrigido para corresponder ao login
     password: "smss@2025",
     role: "admin" as UserRole,
     locationId: "loc-001",

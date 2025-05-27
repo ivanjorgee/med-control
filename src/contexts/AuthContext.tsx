@@ -2,7 +2,7 @@
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { AuthUserData, AuthContextType } from "./auth/types";
 import { AuthService } from "./auth/authService";
-import { initializeDefaultData } from "./auth/authUtils";
+import { initializeDefaultData, forceUpdateUserData } from "./auth/authUtils";
 import { useToast } from "@/hooks/use-toast";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -16,6 +16,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     // Inicializar dados padrão primeiro
     initializeDefaultData();
+    
+    // Forçar atualização dos dados de usuário para garantir consistência
+    forceUpdateUserData();
     
     // Check if user is authenticated when component mounts
     const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
