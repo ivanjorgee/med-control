@@ -1,6 +1,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { Medicine } from "@/types";
+import { DataManager } from "@/utils/dataManager";
 
 const MEDICINES_STORAGE_KEY = "medcontrol_medicines";
 
@@ -10,6 +11,8 @@ interface MedicineContextType {
   updateMedicines: (updatedMedicines: Medicine[]) => void;
   updateMedicine: (updatedMedicine: Medicine) => void;
   addMedicine: (medicine: Medicine) => void;
+  exportData: () => string;
+  importData: (data: string) => boolean;
 }
 
 const MedicineContext = createContext<MedicineContextType | undefined>(undefined);
@@ -20,6 +23,15 @@ export const MedicineProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const loadMedicines = () => {
       try {
+        // Verificar e migrar dados se necessário
+        DataManager.migrateDataIfNeeded();
+        
+        // Validar integridade dos dados
+        if (!DataManager.validateData()) {
+          console.warn('Dados corrompidos detectados, criando backup de emergência...');
+          DataManager.createAutoBackup();
+        }
+        
         const storedMedicines = localStorage.getItem(MEDICINES_STORAGE_KEY);
         if (storedMedicines) {
           setMedicines(JSON.parse(storedMedicines));
@@ -35,11 +47,17 @@ export const MedicineProvider = ({ children }: { children: ReactNode }) => {
     };
     
     loadMedicines();
+    
+    // Criar backup automático na inicialização
+    DataManager.createAutoBackup();
   }, []);
 
   const updateMedicines = (updatedMedicines: Medicine[]) => {
     setMedicines(updatedMedicines);
     localStorage.setItem(MEDICINES_STORAGE_KEY, JSON.stringify(updatedMedicines));
+    
+    // Criar backup após grandes alterações
+    DataManager.createAutoBackup();
   };
 
   // Add new function to update a single medicine
@@ -58,13 +76,32 @@ export const MedicineProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem(MEDICINES_STORAGE_KEY, JSON.stringify(newMedicines));
   };
 
+  // Funções de export/import
+  const exportData = () => {
+    return DataManager.exportAllData();
+  };
+
+  const importData = (data: string) => {
+    const success = DataManager.importAllData(data);
+    if (success) {
+      // Recarregar dados após import
+      const storedMedicines = localStorage.getItem(MEDICINES_STORAGE_KEY);
+      if (storedMedicines) {
+        setMedicines(JSON.parse(storedMedicines));
+      }
+    }
+    return success;
+  };
+
   return (
     <MedicineContext.Provider value={{ 
       medicines, 
       setMedicines, 
       updateMedicines,
       updateMedicine,
-      addMedicine
+      addMedicine,
+      exportData,
+      importData
     }}>
       {children}
     </MedicineContext.Provider>

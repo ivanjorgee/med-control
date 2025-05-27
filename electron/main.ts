@@ -1,9 +1,60 @@
 
-import { app, BrowserWindow, Menu } from 'electron';
+import { app, BrowserWindow, Menu, dialog } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import path from 'path';
 import url from 'url';
 
 let mainWindow: BrowserWindow | null;
+
+// Configurar auto-updater
+autoUpdater.checkForUpdatesAndNotify();
+
+// Log de debug para updates
+autoUpdater.logger = console;
+
+// Eventos do auto-updater
+autoUpdater.on('checking-for-update', () => {
+  console.log('Verificando atualizações...');
+});
+
+autoUpdater.on('update-available', (info) => {
+  console.log('Atualização disponível:', info);
+  dialog.showMessageBox(mainWindow!, {
+    type: 'info',
+    title: 'Atualização Disponível',
+    message: 'Uma nova versão está disponível. Será baixada em segundo plano.',
+    buttons: ['OK']
+  });
+});
+
+autoUpdater.on('update-not-available', (info) => {
+  console.log('Nenhuma atualização disponível:', info);
+});
+
+autoUpdater.on('error', (err) => {
+  console.error('Erro no auto-updater:', err);
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  let log_message = "Velocidade de download: " + progressObj.bytesPerSecond;
+  log_message = log_message + ' - Baixado ' + progressObj.percent + '%';
+  log_message = log_message + ' (' + progressObj.transferred + "/" + progressObj.total + ')';
+  console.log(log_message);
+});
+
+autoUpdater.on('update-downloaded', (info) => {
+  console.log('Atualização baixada:', info);
+  dialog.showMessageBox(mainWindow!, {
+    type: 'info',
+    title: 'Atualização Pronta',
+    message: 'A atualização foi baixada. Será instalada ao reiniciar a aplicação.',
+    buttons: ['Reiniciar Agora', 'Mais Tarde']
+  }).then((result) => {
+    if (result.response === 0) {
+      autoUpdater.quitAndInstall();
+    }
+  });
+});
 
 function createWindow() {
   // Create the browser window.
@@ -38,6 +89,13 @@ function createWindow() {
     {
       label: 'Arquivo',
       submenu: [
+        {
+          label: 'Verificar Atualizações',
+          click: () => {
+            autoUpdater.checkForUpdatesAndNotify();
+          }
+        },
+        { type: 'separator' },
         { role: 'quit', label: 'Sair' }
       ]
     },
@@ -101,7 +159,14 @@ function createWindow() {
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  createWindow();
+  
+  // Verificar atualizações 5 segundos após iniciar
+  setTimeout(() => {
+    autoUpdater.checkForUpdatesAndNotify();
+  }, 5000);
+});
 
 // Quit when all windows are closed.
 app.on('window-all-closed', () => {

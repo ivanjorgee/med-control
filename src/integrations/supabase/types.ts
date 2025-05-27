@@ -9,13 +9,453 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      dispensations: {
+        Row: {
+          continuous_use: boolean | null
+          created_at: string | null
+          id: string
+          location_id: string | null
+          medication_id: string | null
+          next_return: string | null
+          patient_document: string
+          quantity: number
+          user_id: string | null
+        }
+        Insert: {
+          continuous_use?: boolean | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          medication_id?: string | null
+          next_return?: string | null
+          patient_document: string
+          quantity: number
+          user_id?: string | null
+        }
+        Update: {
+          continuous_use?: boolean | null
+          created_at?: string | null
+          id?: string
+          location_id?: string | null
+          medication_id?: string | null
+          next_return?: string | null
+          patient_document?: string
+          quantity?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispensations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispensations_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispensations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      dispensings: {
+        Row: {
+          continuous_use: boolean | null
+          created_at: string | null
+          dispensed_by: string
+          doctor_crm: string
+          doctor_name: string
+          document_type: string
+          id: string
+          location_id: string | null
+          location_name: string
+          measure_unit: string
+          medication_id: string | null
+          medication_name: string
+          next_return_date: string | null
+          notes: string | null
+          patient_document: string
+          patient_name: string
+          prescription_date: string
+          quantity: number
+        }
+        Insert: {
+          continuous_use?: boolean | null
+          created_at?: string | null
+          dispensed_by: string
+          doctor_crm: string
+          doctor_name: string
+          document_type: string
+          id?: string
+          location_id?: string | null
+          location_name: string
+          measure_unit: string
+          medication_id?: string | null
+          medication_name: string
+          next_return_date?: string | null
+          notes?: string | null
+          patient_document: string
+          patient_name: string
+          prescription_date: string
+          quantity: number
+        }
+        Update: {
+          continuous_use?: boolean | null
+          created_at?: string | null
+          dispensed_by?: string
+          doctor_crm?: string
+          doctor_name?: string
+          document_type?: string
+          id?: string
+          location_id?: string | null
+          location_name?: string
+          measure_unit?: string
+          medication_id?: string | null
+          medication_name?: string
+          next_return_date?: string | null
+          notes?: string | null
+          patient_document?: string
+          patient_name?: string
+          prescription_date?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dispensings_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dispensings_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medicines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      distributions: {
+        Row: {
+          approved_by: string | null
+          batch_number: string | null
+          created_at: string | null
+          destination_location: string | null
+          id: string
+          medication_id: string | null
+          medicine_name: string | null
+          note: string | null
+          quantity: number
+          reason: string | null
+          requested_by: string | null
+          requester_id: string | null
+          source_location: string | null
+          status: string | null
+          target_location: string | null
+          updated_at: string | null
+          urgency: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          batch_number?: string | null
+          created_at?: string | null
+          destination_location?: string | null
+          id?: string
+          medication_id?: string | null
+          medicine_name?: string | null
+          note?: string | null
+          quantity: number
+          reason?: string | null
+          requested_by?: string | null
+          requester_id?: string | null
+          source_location?: string | null
+          status?: string | null
+          target_location?: string | null
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          batch_number?: string | null
+          created_at?: string | null
+          destination_location?: string | null
+          id?: string
+          medication_id?: string | null
+          medicine_name?: string | null
+          note?: string | null
+          quantity?: number
+          reason?: string | null
+          requested_by?: string | null
+          requester_id?: string | null
+          source_location?: string | null
+          status?: string | null
+          target_location?: string | null
+          updated_at?: string | null
+          urgency?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "distributions_medication_id_fkey"
+            columns: ["medication_id"]
+            isOneToOne: false
+            referencedRelation: "medications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distributions_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distributions_source_location_fkey"
+            columns: ["source_location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "distributions_target_location_fkey"
+            columns: ["target_location"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          coordinator: string | null
+          created_at: string | null
+          email: string | null
+          id: string
+          name: string
+          phone: string | null
+          state: string | null
+          status: string | null
+          type: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          coordinator?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          state?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          coordinator?: string | null
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          state?: string | null
+          status?: string | null
+          type?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      medications: {
+        Row: {
+          created_at: string | null
+          expiration: string
+          id: string
+          location_id: string | null
+          lot: string
+          name: string
+          quantity: number
+        }
+        Insert: {
+          created_at?: string | null
+          expiration: string
+          id?: string
+          location_id?: string | null
+          lot: string
+          name: string
+          quantity: number
+        }
+        Update: {
+          created_at?: string | null
+          expiration?: string
+          id?: string
+          location_id?: string | null
+          lot?: string
+          name?: string
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medications_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      medicines: {
+        Row: {
+          batch_number: string
+          category: string
+          created_at: string | null
+          description: string | null
+          expiration_date: string
+          id: string
+          location_id: string | null
+          manufacturer: string
+          measure_unit: string
+          min_quantity: number
+          name: string
+          quantity: number
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          batch_number: string
+          category: string
+          created_at?: string | null
+          description?: string | null
+          expiration_date: string
+          id?: string
+          location_id?: string | null
+          manufacturer: string
+          measure_unit: string
+          min_quantity?: number
+          name: string
+          quantity?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          batch_number?: string
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          expiration_date?: string
+          id?: string
+          location_id?: string | null
+          manufacturer?: string
+          measure_unit?: string
+          min_quantity?: number
+          name?: string
+          quantity?: number
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medicines_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          location_id: string | null
+          name: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          location_id?: string | null
+          name: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          location_id?: string | null
+          name?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      users: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          location_id: string | null
+          name: string
+          password: string
+          role: string
+          status: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id?: string
+          location_id?: string | null
+          name: string
+          password: string
+          role: string
+          status?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          location_id?: string | null
+          name?: string
+          password?: string
+          role?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "users_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

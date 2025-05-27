@@ -9,16 +9,53 @@
     "dist/**/*",
     "electron-dist/**/*"
   ],
+  "extraMetadata": {
+    "main": "electron-dist/main.js"
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "your-github-username",
+    "repo": "med-control",
+    "private": true
+  },
   "mac": {
     "category": "public.app-category.medical",
-    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png"
+    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png",
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["x64", "arm64"]
+      }
+    ]
   },
   "win": {
-    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png"
+    "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png",
+    "target": [
+      {
+        "target": "nsis",
+        "arch": ["x64", "ia32"]
+      }
+    ]
   },
   "linux": {
     "icon": "public/lovable-uploads/12c04d39-ea85-4e5b-8cfa-8563284f1ed5.png",
     "category": "Office;Healthcare",
-    "target": ["AppImage", "deb"]
+    "target": [
+      {
+        "target": "AppImage",
+        "arch": ["x64"]
+      },
+      {
+        "target": "deb",
+        "arch": ["x64"]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true,
+    "shortcutName": "Cura Saúde Central"
   }
 }
