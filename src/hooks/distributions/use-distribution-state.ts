@@ -1,12 +1,14 @@
 
 import { useState, useEffect } from "react";
 import { DistributionRecord } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function useDistributionState() {
   const [distributions, setDistributions] = useState<DistributionRecord[]>([]);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { authUser, isAdmin } = useAuth();
   
   // Load saved distributions from localStorage
   useEffect(() => {
@@ -24,11 +26,12 @@ export function useDistributionState() {
   
   // Save distributions to localStorage whenever it changes
   useEffect(() => {
-    if (distributions.length > 0) {
+    if (distributions.length >= 0) {
       localStorage.setItem('medcontrol_distributions', JSON.stringify(distributions));
     }
   }, [distributions]);
 
+  // Filter distributions based on user role and location
   const filteredDistributions = distributions.filter((distribution) => {
     const matchesSearch = 
       distribution.medicineName.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -36,7 +39,10 @@ export function useDistributionState() {
       distribution.batchNumber.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === "all" || distribution.status === statusFilter;
     
-    return matchesSearch && matchesStatus;
+    // Se não for admin, mostrar apenas distribuições da unidade do usuário
+    const matchesLocation = isAdmin || !authUser?.locationId || distribution.locationId === authUser.locationId;
+    
+    return matchesSearch && matchesStatus && matchesLocation;
   });
   
   return {

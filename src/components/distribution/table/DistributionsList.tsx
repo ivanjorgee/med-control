@@ -1,5 +1,5 @@
 
-import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DistributionEmpty } from "./DistributionEmpty";
 import { DistributionRow } from "./DistributionRow";
 

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { MainLayout } from "@/layouts/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,17 +17,28 @@ import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 import { useMedicines } from "@/contexts/MedicineContext";
 import { Checkbox } from "@/components/ui/checkbox";
+import { addMonths, isBefore, format } from "date-fns";
 
 const dispensingSchema = z.object({
   patientName: z.string().min(3, { message: "Nome do paciente deve ter pelo menos 3 caracteres" }),
-  patientDocument: z.string().min(11, { message: "Documento inválido" }),
+  documentType: z.enum(["cpf", "sus"], { required_error: "Selecione o tipo de documento" }),
+  patientDocument: z.string().min(8, { message: "Documento inválido" }),
   doctorName: z.string().min(3, { message: "Nome do médico deve ter pelo menos 3 caracteres" }),
   doctorCRM: z.string().min(4, { message: "CRM inválido" }),
   medicationId: z.string().min(1, { message: "Selecione um medicamento" }),
   quantity: z.coerce.number().positive({ message: "Quantidade deve ser maior que zero" }),
   notes: z.string().optional(),
   prescriptionDate: z.string().min(1, { message: "Informe a data da receita" }),
-  continuousUse: z.boolean().default(false)
+  continuousUse: z.boolean().default(false),
+  nextReturnDate: z.string().optional()
+}).refine((data) => {
+  if (data.continuousUse && !data.nextReturnDate) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Data do próximo retorno é obrigatória para uso contínuo",
+  path: ["nextReturnDate"]
 });
 
 type DispensingFormValues = z.infer<typeof dispensingSchema>;
@@ -39,12 +50,13 @@ const MedicationDispensingPage = () => {
   const [formData, setFormData] = useState<DispensingFormValues | null>(null);
   const { authUser, login } = useAuth();
   const { toast } = useToast();
-  const { medicines } = useMedicines();
+  const { medicines, updateMedicine } = useMedicines();
 
   const form = useForm<DispensingFormValues>({
     resolver: zodResolver(dispensingSchema),
     defaultValues: {
       patientName: "",
+      documentType: "cpf",
       patientDocument: "",
       doctorName: "",
       doctorCRM: "",
@@ -52,14 +64,40 @@ const MedicationDispensingPage = () => {
       quantity: 1,
       notes: "",
       prescriptionDate: new Date().toISOString().split("T")[0],
-      continuousUse: false
+      continuousUse: false,
+      nextReturnDate: ""
     }
   });
 
+  const watchContinuousUse = form.watch("continuousUse");
+
   const handleSubmit = (data: DispensingFormValues) => {
-    // Store the form data for processing after authentication
+    // Verificar se é uma dispensação de uso contínuo e se já existe uma dispensação recente
+    if (data.continuousUse) {
+      const existingDispensings = JSON.parse(localStorage.getItem('medcontrol_dispensings') || '[]');
+      const lastDispensing = existingDispensings.find((d: any) => 
+        d.patientDocument === data.patientDocument && 
+        d.medicationId === data.medicationId &&
+        d.continuousUse === true
+      );
+      
+      if (lastDispensing) {
+        const lastDate = new Date(lastDispensing.created_at);
+        const oneMonthLater = addMonths(lastDate, 1);
+        const today = new Date();
+        
+        if (isBefore(today, oneMonthLater)) {
+          toast({
+            variant: "destructive",
+            title: "Dispensação não permitida",
+            description: `Próxima dispensação permitida apenas após ${format(oneMonthLater, 'dd/MM/yyyy')}`
+          });
+          return;
+        }
+      }
+    }
+
     setFormData(data);
-    // Open the authentication dialog
     setShowAuthDialog(true);
   };
 
@@ -68,7 +106,6 @@ const MedicationDispensingPage = () => {
     
     setIsSubmitting(true);
     try {
-      // Verify user credentials
       if (!authUser) {
         toast({
           variant: "destructive",
@@ -78,8 +115,6 @@ const MedicationDispensingPage = () => {
         return;
       }
 
-      // In a real system, we would verify the password here
-      // For now, we'll just simulate a verification
       const isVerified = await login(authUser.email, password);
       
       if (!isVerified) {
@@ -91,20 +126,6 @@ const MedicationDispensingPage = () => {
         return;
       }
 
-      // Simulating permission check
-      // In a real system, this would check against the permissions database
-      const hasPermission = true; // This would come from the backend
-      
-      if (!hasPermission) {
-        toast({
-          variant: "destructive",
-          title: "Permissão negada",
-          description: "Você não tem permissão para dispensar medicamentos."
-        });
-        return;
-      }
-
-      // Process the dispensing
       const selectedMedicine = medicines.find(med => med.id === formData.medicationId);
       
       if (!selectedMedicine) {
@@ -125,15 +146,45 @@ const MedicationDispensingPage = () => {
         return;
       }
 
-      // Here we would update the stock and create a dispensing record
-      // For now, we'll just show a success message
+      // Criar registro de dispensação
+      const dispensing = {
+        id: crypto.randomUUID(),
+        patientName: formData.patientName,
+        documentType: formData.documentType,
+        patientDocument: formData.patientDocument,
+        doctorName: formData.doctorName,
+        doctorCRM: formData.doctorCRM,
+        medicationId: formData.medicationId,
+        medicationName: selectedMedicine.name,
+        quantity: formData.quantity,
+        measureUnit: selectedMedicine.measureUnit,
+        notes: formData.notes || '',
+        prescriptionDate: formData.prescriptionDate,
+        continuousUse: formData.continuousUse,
+        nextReturnDate: formData.nextReturnDate || null,
+        dispensedBy: authUser.name,
+        locationId: authUser.locationId,
+        locationName: authUser.locationId, // Será resolvido pelo nome da unidade
+        created_at: new Date().toISOString()
+      };
+
+      // Salvar dispensação
+      const existingDispensings = JSON.parse(localStorage.getItem('medcontrol_dispensings') || '[]');
+      existingDispensings.unshift(dispensing);
+      localStorage.setItem('medcontrol_dispensings', JSON.stringify(existingDispensings));
+
+      // Atualizar estoque do medicamento
+      const updatedMedicine = {
+        ...selectedMedicine,
+        quantity: selectedMedicine.quantity - formData.quantity
+      };
+      updateMedicine(updatedMedicine);
 
       toast({
         title: "Medicamento dispensado com sucesso",
         description: `${formData.quantity} ${selectedMedicine.measureUnit} de ${selectedMedicine.name} para ${formData.patientName}`,
       });
 
-      // Reset form and close dialog
       form.reset();
       setShowAuthDialog(false);
       setPassword("");
@@ -196,12 +247,39 @@ const MedicationDispensingPage = () => {
 
                 <FormField
                   control={form.control}
+                  name="documentType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Documento</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="cpf">CPF</SelectItem>
+                          <SelectItem value="sus">Cartão SUS</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="patientDocument"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF do Paciente</FormLabel>
+                      <FormLabel>
+                        {form.watch("documentType") === "cpf" ? "CPF do Paciente" : "Número do Cartão SUS"}
+                      </FormLabel>
                       <FormControl>
-                        <Input placeholder="000.000.000-00" {...field} />
+                        <Input 
+                          placeholder={form.watch("documentType") === "cpf" ? "000.000.000-00" : "Número do SUS"} 
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -279,7 +357,9 @@ const MedicationDispensingPage = () => {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {medicines.map((med) => (
+                          {medicines
+                            .filter(med => authUser?.role === "admin" || med.locationId === authUser?.locationId)
+                            .map((med) => (
                             <SelectItem key={med.id} value={med.id}>
                               {med.name} - {med.batchNumber} ({med.quantity} {med.measureUnit} disponíveis)
                             </SelectItem>
@@ -328,6 +408,29 @@ const MedicationDispensingPage = () => {
                     </FormItem>
                   )}
                 />
+
+                {watchContinuousUse && (
+                  <FormField
+                    control={form.control}
+                    name="nextReturnDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data do Próximo Retorno</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="date" 
+                            {...field}
+                            min={addMonths(new Date(), 1).toISOString().split('T')[0]}
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Data para a próxima retirada (mínimo 1 mês)
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}

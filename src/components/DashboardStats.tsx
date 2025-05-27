@@ -2,7 +2,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, Calendar, Package, PackageCheck } from "lucide-react";
 import { useMedicines } from "@/contexts/MedicineContext";
+import { useAuth } from "@/contexts/AuthContext";
 import { addMonths, isBefore, isAfter } from "date-fns";
+import { useEffect, useState } from "react";
 
 interface StatCardProps {
   title: string;
@@ -31,25 +33,53 @@ export function StatCard({ title, value, description, icon, className }: StatCar
 
 export function DashboardStats() {
   const { medicines } = useMedicines();
+  const { authUser, isAdmin } = useAuth();
+  const [distributedThisMonth, setDistributedThisMonth] = useState(0);
+  
+  // Filtrar medicamentos baseado na unidade do usuário
+  const userMedicines = isAdmin ? medicines : medicines.filter(med => 
+    med.locationId === authUser?.locationId
+  );
+  
+  useEffect(() => {
+    // Calcular distribuições do mês baseado nos dados salvos
+    const savedDispensings = localStorage.getItem('medcontrol_dispensings');
+    if (savedDispensings) {
+      const dispensings = JSON.parse(savedDispensings);
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      
+      const thisMonthDispensings = dispensings.filter((dispensing: any) => {
+        const dispensingDate = new Date(dispensing.created_at);
+        const matchesLocation = isAdmin || !authUser?.locationId || dispensing.locationId === authUser.locationId;
+        return dispensingDate.getMonth() === currentMonth && 
+               dispensingDate.getFullYear() === currentYear &&
+               matchesLocation;
+      });
+      
+      const totalDistributed = thisMonthDispensings.reduce((sum: number, dispensing: any) => 
+        sum + dispensing.quantity, 0
+      );
+      
+      setDistributedThisMonth(totalDistributed);
+    }
+  }, [authUser, isAdmin]);
   
   // Calcula estatísticas
   const today = new Date();
   const threeMonthsLater = addMonths(today, 3);
   
   // Total de medicamentos em estoque
-  const totalInStock = medicines.reduce((sum, med) => sum + med.quantity, 0);
-  
-  // Total distribuído no mês (placeholder - em um sistema real isso viria de registros de distribuição)
-  const distributedThisMonth = 0;
+  const totalInStock = userMedicines.reduce((sum, med) => sum + med.quantity, 0);
   
   // Medicamentos próximos a vencer (próximos 3 meses)
-  const expiringCount = medicines.filter(med => {
+  const expiringCount = userMedicines.filter(med => {
     const expirationDate = new Date(med.expirationDate);
     return expirationDate > today && expirationDate <= threeMonthsLater;
   }).length;
   
   // Medicamentos que necessitam reposição
-  const needRestockCount = medicines.filter(med => 
+  const needRestockCount = userMedicines.filter(med => 
     med.status === "low" || med.status === "critical"
   ).length;
 
@@ -58,13 +88,13 @@ export function DashboardStats() {
       <StatCard
         title="Total em Estoque"
         value={totalInStock}
-        description={`${medicines.length} medicamentos cadastrados`}
+        description={`${userMedicines.length} medicamentos${!isAdmin ? ' na sua unidade' : ''}`}
         icon={<Package className="h-4 w-4 text-[#0052CC]" />}
       />
       <StatCard
-        title="Distribuídos (mês)"
+        title="Dispensados (mês)"
         value={distributedThisMonth}
-        description="No último mês"
+        description={`No último mês${!isAdmin ? ' na sua unidade' : ''}`}
         icon={<PackageCheck className="h-4 w-4 text-[#0052CC]" />}
       />
       <StatCard
