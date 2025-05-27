@@ -1,14 +1,50 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "cura-saude-central",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão de Medicamentos - Cura Saúde Central",
+  "author": "Ivan Jorge",
+  "main": "main.js",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
-    "build:dev": "vite build --mode development",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "start": "electron .",
+    "dist": "electron-builder",
+    "publish": "electron-builder --publish always"
+  },
+  "build": {
+    "appId": "com.cura.saude.central",
+    "productName": "CuraSaudeCentral",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "dist",
+      "main.js",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.productivity"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ivanjorgee",
+        "repo": "med-control"
+      }
+    ]
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -41,15 +77,12 @@
     "@radix-ui/react-tooltip": "^1.1.4",
     "@supabase/supabase-js": "^2.49.7",
     "@tanstack/react-query": "^5.56.2",
-    "@types/electron": "^1.6.12",
-    "@types/uuid": "^10.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "concurrently": "^9.1.2",
     "date-fns": "^3.6.0",
-    "electron": "^36.2.1",
-    "electron-updater": "^6.6.2",
+    "electron-updater": "^6.1.1",
     "embla-carousel-react": "^8.3.0",
     "input-otp": "^1.2.4",
     "jspdf": "^2.5.2",
@@ -74,11 +107,14 @@
   "devDependencies": {
     "@eslint/js": "^9.9.0",
     "@tailwindcss/typography": "^0.5.15",
+    "@types/electron": "^1.6.12",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "electron": "^36.3.1",
+    "electron-builder": "^26.0.12",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
