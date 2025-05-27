@@ -41,8 +41,23 @@ export const forceUpdateUserData = () => {
 
 export const forceUpdateLocationData = () => {
   console.log("=== FORÇANDO ATUALIZAÇÃO DOS DADOS DE LOCALIZAÇÃO ===");
+  
+  // Primeiro, limpa dados corrompidos se existirem
+  const existingData = localStorage.getItem("medcontrol_locations");
+  if (existingData) {
+    try {
+      const parsed = JSON.parse(existingData);
+      console.log("Dados existentes de localização:", parsed);
+    } catch (error) {
+      console.log("Dados corrompidos detectados, limpando...");
+      localStorage.removeItem("medcontrol_locations");
+    }
+  }
+  
+  // Força a atualização com dados válidos
   localStorage.setItem("medcontrol_locations", JSON.stringify(DEFAULT_LOCATIONS));
   console.log("✅ Dados de localização atualizados com a versão mais recente");
+  console.log("Dados salvos:", DEFAULT_LOCATIONS);
 };
 
 export const getLocationName = (locationId: string): string => {

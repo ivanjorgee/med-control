@@ -17,29 +17,35 @@ interface LocationsTableProps {
 }
 
 const formatCreatedDate = (dateString: string) => {
-  console.log("Formatando data:", dateString);
+  console.log("Formatando data:", dateString, "Tipo:", typeof dateString);
   
-  if (!dateString) {
-    console.log("Data vazia ou undefined");
+  // Se não há data ou é nula/undefined, retorna valor padrão
+  if (!dateString || dateString === 'undefined' || dateString === 'null') {
+    console.log("Data vazia, undefined ou null");
     return "Data não informada";
   }
   
   try {
-    // Try to parse as ISO string first
-    let date = parseISO(dateString);
+    let date;
     
-    // If that fails, try with Date constructor
-    if (!isValid(date)) {
+    // Primeiro tenta parseISO para datas ISO
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+      date = parseISO(dateString);
+    } else {
+      // Se não é ISO, tenta com Date constructor
       date = new Date(dateString);
     }
     
-    // Check if the date is valid
-    if (!isValid(date)) {
+    // Verifica se a data é válida
+    if (!isValid(date) || isNaN(date.getTime())) {
       console.log("Data inválida após parsing:", dateString);
       return "Data inválida";
     }
     
-    return format(date, "dd/MM/yyyy");
+    // Formata a data
+    const formatted = format(date, "dd/MM/yyyy");
+    console.log("Data formatada com sucesso:", formatted);
+    return formatted;
   } catch (error) {
     console.error("Erro ao formatar data:", error, "Input:", dateString);
     return "Data inválida";
@@ -77,58 +83,61 @@ export const LocationsTable = ({
         </TableHeader>
         <TableBody>
           {locations.length > 0 ? (
-            locations.map((location) => (
-              <TableRow key={location.id}>
-                <TableCell>
-                  <div className="font-medium">{location.name}</div>
-                  <div className="text-sm text-muted-foreground truncate max-w-xs md:hidden">
-                    {locationTypeLabels[location.type]} • {location.city}/{location.state}
-                  </div>
-                </TableCell>
-                <TableCell className="hidden md:table-cell">{locationTypeLabels[location.type]}</TableCell>
-                <TableCell className="hidden md:table-cell">
-                  {location.city}/{location.state}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell">
-                  {formatCreatedDate(location.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={location.status === "active" ? "default" : "secondary"}>
-                    {location.status === "active" ? "Ativo" : "Inativo"}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    asChild
-                    className="flex items-center gap-1 whitespace-nowrap"
-                  >
-                    <Link to={`/stock?locationId=${location.id}`}>
-                      <Package className="h-4 w-4" />
-                      <span className="hidden sm:inline">Ver Estoque</span>
-                    </Link>
-                  </Button>
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-2">
-                    <LocationDialog 
-                      location={location} 
-                      isEditing={true} 
-                      onLocationSaved={onLocationSaved}
-                      triggerButton={
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      }
-                    />
-                    <Button variant="ghost" size="sm" onClick={() => onDelete(location.id)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
+            locations.map((location) => {
+              console.log("Processando localização:", location.name, "createdAt:", location.createdAt);
+              return (
+                <TableRow key={location.id}>
+                  <TableCell>
+                    <div className="font-medium">{location.name}</div>
+                    <div className="text-sm text-muted-foreground truncate max-w-xs md:hidden">
+                      {locationTypeLabels[location.type]} • {location.city}/{location.state}
+                    </div>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">{locationTypeLabels[location.type]}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {location.city}/{location.state}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell">
+                    {formatCreatedDate(location.createdAt)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={location.status === "active" ? "default" : "secondary"}>
+                      {location.status === "active" ? "Ativo" : "Inativo"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      asChild
+                      className="flex items-center gap-1 whitespace-nowrap"
+                    >
+                      <Link to={`/stock?locationId=${location.id}`}>
+                        <Package className="h-4 w-4" />
+                        <span className="hidden sm:inline">Ver Estoque</span>
+                      </Link>
                     </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <LocationDialog 
+                        location={location} 
+                        isEditing={true} 
+                        onLocationSaved={onLocationSaved}
+                        triggerButton={
+                          <Button variant="outline" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        }
+                      />
+                      <Button variant="ghost" size="sm" onClick={() => onDelete(location.id)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })
           ) : (
             <TableRow>
               <TableCell colSpan={7} className="text-center py-10">

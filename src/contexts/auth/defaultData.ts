@@ -6,7 +6,7 @@ export const DEFAULT_USERS: DefaultUser[] = [
   {
     id: "admin-001",
     name: "Administrador do Sistema",
-    email: "smss.sjapa@gmail.com", // Corrigido para corresponder ao login
+    email: "smss.sjapa@gmail.com",
     password: "smss@2025",
     role: "admin" as UserRole,
     locationId: "loc-001",
@@ -43,7 +43,7 @@ export const DEFAULT_LOCATIONS: DefaultLocation[] = [
     phone: "(11) 99999-9999",
     email: "central@medcontrol.com",
     coordinator: "Administrador do Sistema",
-    createdAt: "2024-01-15T10:00:00.000Z",
+    createdAt: new Date().toISOString(),
     status: "active",
     coordinatorId: "admin-001"
   }

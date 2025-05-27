@@ -21,8 +21,42 @@ export const useLocations = () => {
       try {
         setIsLoading(true);
         const storedLocations = localStorage.getItem(STORAGE_KEY);
+        
         if (storedLocations) {
-          setLocations(JSON.parse(storedLocations));
+          try {
+            const parsedLocations = JSON.parse(storedLocations);
+            console.log("Localizações carregadas do localStorage:", parsedLocations);
+            
+            // Validar e limpar dados se necessário
+            const validLocations = parsedLocations.filter((loc: any) => {
+              if (!loc.id || !loc.name) {
+                console.warn("Localização inválida encontrada:", loc);
+                return false;
+              }
+              
+              // Garantir que createdAt existe e é válido
+              if (!loc.createdAt || loc.createdAt === 'undefined' || loc.createdAt === 'null') {
+                console.log("Corrigindo createdAt para localização:", loc.name);
+                loc.createdAt = new Date().toISOString();
+              }
+              
+              return true;
+            });
+            
+            setLocations(validLocations);
+            
+            // Se os dados foram corrigidos, salva de volta
+            if (validLocations.length !== parsedLocations.length || 
+                validLocations.some((loc: any, index: number) => loc.createdAt !== parsedLocations[index]?.createdAt)) {
+              console.log("Salvando localizações corrigidas...");
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(validLocations));
+            }
+          } catch (parseError) {
+            console.error("Erro ao fazer parse das localizações:", parseError);
+            // Se há erro no parse, inicializa com array vazio
+            setLocations([]);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+          }
         } else {
           // Initialize with empty array instead of mock data
           setLocations([]);
