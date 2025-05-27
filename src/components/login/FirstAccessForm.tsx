@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,6 +32,8 @@ export function FirstAccessForm() {
     setIsLoading(true);
     
     try {
+      console.log("Iniciando configuração inicial do sistema...");
+      
       // Validações
       if (!formData.name || !formData.email || !formData.password || !formData.locationName) {
         toast({
@@ -80,6 +81,8 @@ export function FirstAccessForm() {
         status: "active"
       };
 
+      console.log("Localização criada:", newLocation);
+
       // Criar primeiro usuário administrador
       const userId = `user-${Date.now()}`;
       const newUser: UserType = {
@@ -96,10 +99,16 @@ export function FirstAccessForm() {
         phone: formData.locationPhone || ""
       };
 
+      console.log("Usuário administrador criado:", newUser);
+
       // Salvar no localStorage
       localStorage.setItem("medcontrol_locations", JSON.stringify([newLocation]));
       localStorage.setItem("users", JSON.stringify([newUser]));
       localStorage.setItem("medcontrol-setup-complete", "true");
+
+      console.log("Dados salvos no localStorage");
+      console.log("Localizações:", localStorage.getItem("medcontrol_locations"));
+      console.log("Usuários:", localStorage.getItem("users"));
 
       toast({
         title: "Configuração concluída!",

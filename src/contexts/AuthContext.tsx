@@ -41,9 +41,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
+    console.log("Iniciando login para:", email);
+    
     // Buscar usuários cadastrados no localStorage
     const storedUsers = localStorage.getItem("users");
     if (!storedUsers) {
+      console.log("Nenhum usuário encontrado no localStorage");
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -52,10 +55,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    const users = JSON.parse(storedUsers);
-    const user = users.find((u: any) => u.email === email && u.password === password);
+    let users;
+    try {
+      users = JSON.parse(storedUsers);
+      console.log("Usuários encontrados:", users.length);
+    } catch (error) {
+      console.error("Erro ao parsear usuários:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao autenticar",
+        description: "Erro ao carregar dados de usuários."
+      });
+      return false;
+    }
+
+    // Buscar usuário com credenciais fornecidas
+    const user = users.find((u: any) => {
+      console.log(`Verificando usuário: ${u.email}, senha: ${u.password}`);
+      return u.email === email && u.password === password;
+    });
     
     if (!user) {
+      console.log("Usuário não encontrado ou senha incorreta");
+      console.log("Email procurado:", email);
+      console.log("Emails disponíveis:", users.map((u: any) => u.email));
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -64,7 +87,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
+    console.log("Usuário encontrado:", user);
+    
     if (user.status === "inactive") {
+      console.log("Usuário inativo");
       toast({
         variant: "destructive",
         title: "Usuário inativo",
@@ -77,10 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const storedLocations = localStorage.getItem("medcontrol_locations");
     let locationName = "Não informado";
     if (storedLocations) {
-      const locations = JSON.parse(storedLocations);
-      const location = locations.find((loc: any) => loc.id === user.locationId);
-      if (location) {
-        locationName = location.name;
+      try {
+        const locations = JSON.parse(storedLocations);
+        const location = locations.find((loc: any) => loc.id === user.locationId);
+        if (location) {
+          locationName = location.name;
+        }
+      } catch (error) {
+        console.error("Erro ao buscar localização:", error);
       }
     }
     
@@ -93,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       locationId: user.locationId,
       locationName: locationName
     };
+    
+    console.log("Dados do usuário autenticado:", authUserData);
     
     // Salvar no localStorage
     localStorage.setItem("medcontrol-auth", "true");
