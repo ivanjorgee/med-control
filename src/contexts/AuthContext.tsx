@@ -15,13 +15,85 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Usuários padrão do sistema
+const DEFAULT_USERS = [
+  {
+    id: "admin-001",
+    name: "Administrador do Sistema",
+    email: "sms.sjapa@gmail.com",
+    password: "smss@2025",
+    role: "admin",
+    locationId: "loc-001",
+    status: "active"
+  },
+  {
+    id: "pharmacist-001", 
+    name: "Farmacêutico Responsável",
+    email: "ivanjfm15@gmail.com",
+    password: "Adbc102030",
+    role: "pharmacist",
+    locationId: "loc-001",
+    status: "active"
+  },
+  {
+    id: "user-001",
+    name: "Usuário Teste",
+    email: "usuario@medcontrol.com",
+    password: "user123",
+    role: "user",
+    locationId: "loc-001", 
+    status: "active"
+  }
+];
+
+// Localizações padrão
+const DEFAULT_LOCATIONS = [
+  {
+    id: "loc-001",
+    name: "Unidade Central de Saúde",
+    type: "hospital",
+    address: "Rua Principal, 123",
+    phone: "(11) 99999-9999",
+    status: "active",
+    coordinatorId: "admin-001"
+  }
+];
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authUser, setAuthUser] = useState<AuthUserData | null>(null);
   const { toast } = useToast();
 
+  // Função para inicializar dados padrão
+  const initializeDefaultData = () => {
+    console.log("=== INICIALIZANDO DADOS PADRÃO ===");
+    
+    // Verificar se já existem usuários
+    const existingUsers = localStorage.getItem("users");
+    if (!existingUsers || JSON.parse(existingUsers).length === 0) {
+      console.log("Criando usuários padrão...");
+      localStorage.setItem("users", JSON.stringify(DEFAULT_USERS));
+      console.log("✅ Usuários padrão criados:", DEFAULT_USERS);
+    }
+    
+    // Verificar se já existem localizações
+    const existingLocations = localStorage.getItem("medcontrol_locations");
+    if (!existingLocations || JSON.parse(existingLocations).length === 0) {
+      console.log("Criando localizações padrão...");
+      localStorage.setItem("medcontrol_locations", JSON.stringify(DEFAULT_LOCATIONS));
+      console.log("✅ Localizações padrão criadas:", DEFAULT_LOCATIONS);
+    }
+    
+    // Marcar sistema como configurado
+    localStorage.setItem("medcontrol-setup-complete", "true");
+    console.log("✅ Sistema marcado como configurado");
+  };
+
   useEffect(() => {
+    // Inicializar dados padrão primeiro
+    initializeDefaultData();
+    
     // Check if user is authenticated when component mounts
     const auth = localStorage.getItem("medcontrol-auth");
     const userData = localStorage.getItem("medcontrol-user");
@@ -48,27 +120,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log("Email informado:", email);
     console.log("Senha informada:", password);
     
-    // Verificar se o localStorage tem dados
-    const allKeys = Object.keys(localStorage);
-    console.log("Chaves disponíveis no localStorage:", allKeys);
-    
     // Buscar usuários cadastrados no localStorage
     const storedUsers = localStorage.getItem("users");
     console.log("Dados brutos de usuários:", storedUsers);
     
     if (!storedUsers) {
       console.log("❌ Nenhum usuário encontrado no localStorage");
-      toast({
-        variant: "destructive",
-        title: "Erro ao autenticar",
-        description: "Nenhum usuário cadastrado no sistema. Configure o sistema primeiro."
-      });
-      return false;
+      // Inicializar dados padrão se não existirem
+      initializeDefaultData();
+      const newStoredUsers = localStorage.getItem("users");
+      if (!newStoredUsers) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao autenticar",
+          description: "Erro ao inicializar usuários do sistema."
+        });
+        return false;
+      }
     }
 
     let users;
     try {
-      users = JSON.parse(storedUsers);
+      const currentUsers = localStorage.getItem("users");
+      users = JSON.parse(currentUsers!);
       console.log("✅ Usuários parseados com sucesso:", users);
       console.log("Total de usuários encontrados:", users.length);
     } catch (error) {
@@ -104,7 +178,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("❌ Usuário não encontrado ou senha incorreta");
       console.log("Email procurado:", email);
       console.log("Emails disponíveis:", users.map((u: any) => u.email));
-      console.log("Senhas disponíveis:", users.map((u: any) => u.password));
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -127,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Buscar nome da unidade
     const storedLocations = localStorage.getItem("medcontrol_locations");
-    let locationName = "Não informado";
+    let locationName = "Unidade Central de Saúde";
     if (storedLocations) {
       try {
         const locations = JSON.parse(storedLocations);
