@@ -43,7 +43,7 @@ export const DEFAULT_LOCATIONS: DefaultLocation[] = [
     phone: "(11) 99999-9999",
     email: "central@medcontrol.com",
     coordinator: "Administrador do Sistema",
-    createdAt: "2024-01-15T10:00:00",
+    createdAt: "2024-01-15T10:00:00.000Z",
     status: "active",
     coordinatorId: "admin-001"
   }

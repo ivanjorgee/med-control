@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Edit, Trash2, Package, Building } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid, parseISO } from "date-fns";
 import { Link } from "react-router-dom";
 import { Location, LocationType } from "@/types";
 import { LocationDialog } from "@/components/locations/LocationDialog";
@@ -17,14 +17,31 @@ interface LocationsTableProps {
 }
 
 const formatCreatedDate = (dateString: string) => {
+  console.log("Formatando data:", dateString);
+  
+  if (!dateString) {
+    console.log("Data vazia ou undefined");
+    return "Data não informada";
+  }
+  
   try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) {
+    // Try to parse as ISO string first
+    let date = parseISO(dateString);
+    
+    // If that fails, try with Date constructor
+    if (!isValid(date)) {
+      date = new Date(dateString);
+    }
+    
+    // Check if the date is valid
+    if (!isValid(date)) {
+      console.log("Data inválida após parsing:", dateString);
       return "Data inválida";
     }
+    
     return format(date, "dd/MM/yyyy");
   } catch (error) {
-    console.error("Erro ao formatar data:", error);
+    console.error("Erro ao formatar data:", error, "Input:", dateString);
     return "Data inválida";
   }
 };

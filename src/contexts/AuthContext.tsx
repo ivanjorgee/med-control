@@ -1,8 +1,7 @@
-
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { AuthUserData, AuthContextType } from "./auth/types";
 import { AuthService } from "./auth/authService";
-import { initializeDefaultData, forceUpdateUserData } from "./auth/authUtils";
+import { initializeDefaultData, forceUpdateUserData, forceUpdateLocationData } from "./auth/authUtils";
 import { useToast } from "@/hooks/use-toast";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +18,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     // Forçar atualização dos dados de usuário para garantir consistência
     forceUpdateUserData();
+    
+    // Forçar atualização dos dados de localização para garantir consistência
+    forceUpdateLocationData();
     
     // Check if user is authenticated when component mounts
     const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
