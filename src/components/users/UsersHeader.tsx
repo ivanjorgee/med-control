@@ -1,21 +1,24 @@
 
 import { NewUserDialog } from "@/components/users/NewUserDialog";
 import { User } from "@/types";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UsersHeaderProps {
-  onUserCreated: (newUser: User) => void;
+  onUserCreated: (user: User) => void;
 }
 
 export function UsersHeader({ onUserCreated }: UsersHeaderProps) {
+  const { isAdmin } = useAuth();
+
   return (
     <div className="flex justify-between items-center mb-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Usuários do Sistema</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Usuários</h1>
         <p className="text-muted-foreground">
-          Gerencie os usuários e permissões de acesso ao sistema.
+          Gerencie os usuários do sistema
         </p>
       </div>
-      <NewUserDialog onUserCreated={onUserCreated} />
+      {isAdmin && <NewUserDialog onUserCreated={onUserCreated} />}
     </div>
   );
 }

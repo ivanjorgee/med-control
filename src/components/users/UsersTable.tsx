@@ -4,8 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Trash2, UserIcon, UsersIcon } from "lucide-react";
 import { EditUserDialog } from "@/components/users/EditUserDialog";
+import { ResetPasswordDialog } from "@/components/users/ResetPasswordDialog";
 import { User, UserRole, Location } from "@/types";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface UsersTableProps {
   users: User[];
@@ -15,6 +17,8 @@ interface UsersTableProps {
 }
 
 export function UsersTable({ users, locations, onDeleteUser, onUpdateUser }: UsersTableProps) {
+  const { isAdmin } = useAuth();
+
   // Helper functions
   const getLocationName = (locationId: string): string => {
     const location = locations.find(loc => loc.id === locationId);
@@ -36,6 +40,14 @@ export function UsersTable({ users, locations, onDeleteUser, onUpdateUser }: Use
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
+  const handlePasswordReset = (userId: string, newPassword: string) => {
+    const userToUpdate = users.find(user => user.id === userId);
+    if (userToUpdate) {
+      const updatedUser = { ...userToUpdate, password: newPassword };
+      onUpdateUser(updatedUser);
+    }
   };
   
   return (
@@ -93,31 +105,38 @@ export function UsersTable({ users, locations, onDeleteUser, onUpdateUser }: Use
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex justify-end gap-2">
-                  <EditUserDialog user={user} onUserUpdated={onUpdateUser} />
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Tem certeza que deseja excluir o usuário <strong>{user.name}</strong>? Esta ação não pode ser desfeita.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                        <AlertDialogAction 
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          onClick={() => onDeleteUser(user.id)}
-                        >
-                          Excluir
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                  {isAdmin && (
+                    <EditUserDialog user={user} onUserUpdated={onUpdateUser} />
+                  )}
+                  {isAdmin && (
+                    <ResetPasswordDialog user={user} onPasswordReset={handlePasswordReset} />
+                  )}
+                  {isAdmin && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Excluir usuário</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Tem certeza que deseja excluir o usuário <strong>{user.name}</strong>? Esta ação não pode ser desfeita.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                          <AlertDialogAction 
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            onClick={() => onDeleteUser(user.id)}
+                          >
+                            Excluir
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

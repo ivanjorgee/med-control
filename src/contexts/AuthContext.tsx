@@ -13,50 +13,6 @@ type AuthContextType = {
   canApproveDistribution: boolean;
 };
 
-// Usuários para teste enquanto não tem banco de dados
-const testUsers = [
-  {
-    id: "1",
-    name: "Admin do Sistema",
-    email: "admin@medcontrol.com",
-    password: "admin123",
-    role: "admin" as UserRole,
-    locationId: "loc-001",
-    locationName: "Central de Distribuição",
-    status: "active"
-  },
-  {
-    id: "2",
-    name: "Farmacêutico",
-    email: "farmaceutico@medcontrol.com",
-    password: "farma123",
-    role: "pharmacist" as UserRole,
-    locationId: "loc-001",
-    locationName: "Central de Distribuição",
-    status: "active"
-  },
-  {
-    id: "3",
-    name: "Unidade de Saúde",
-    email: "saude@medcontrol.com",
-    password: "saude123",
-    role: "health_unit" as UserRole,
-    locationId: "loc-002",
-    locationName: "UBS Centro",
-    status: "active"
-  },
-  {
-    id: "4",
-    name: "Distribuidor",
-    email: "distribuidor@medcontrol.com",
-    password: "dist123",
-    role: "distributor" as UserRole,
-    locationId: "loc-003",
-    locationName: "Centro de Distribuição Regional",
-    status: "active"
-  }
-];
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,9 +41,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Esta função será substituída pela integração com banco de dados
-    // Por enquanto, usa usuários de teste
-    const user = testUsers.find(u => u.email === email && u.password === password);
+    // Buscar usuários cadastrados no localStorage
+    const storedUsers = localStorage.getItem("users");
+    if (!storedUsers) {
+      toast({
+        variant: "destructive",
+        title: "Erro ao autenticar",
+        description: "Nenhum usuário cadastrado no sistema."
+      });
+      return false;
+    }
+
+    const users = JSON.parse(storedUsers);
+    const user = users.find((u: any) => u.email === email && u.password === password);
     
     if (!user) {
       toast({
@@ -107,6 +73,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
+    // Buscar nome da unidade
+    const storedLocations = localStorage.getItem("medcontrol_locations");
+    let locationName = "Não informado";
+    if (storedLocations) {
+      const locations = JSON.parse(storedLocations);
+      const location = locations.find((loc: any) => loc.id === user.locationId);
+      if (location) {
+        locationName = location.name;
+      }
+    }
+    
     // Criar objeto de usuário autenticado
     const authUserData: AuthUserData = {
       id: user.id,
@@ -114,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: user.email,
       role: user.role as UserRole,
       locationId: user.locationId,
-      locationName: user.locationName
+      locationName: locationName
     };
     
     // Salvar no localStorage

@@ -3,12 +3,13 @@ import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LogIn, Key, Mail } from "lucide-react";
+import { LogIn, Key, Mail, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { LoginHints } from "./LoginHints";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LoginForm() {
   const [email, setEmail] = useState("");
@@ -86,6 +87,13 @@ export function LoginForm() {
   return (
     <Card className="border-gray-200">
       <CardContent className="pt-6">
+        <Alert className="mb-4 border-blue-200 bg-blue-50">
+          <AlertCircle className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-blue-700">
+            <strong>Esqueceu sua senha?</strong> Entre em contato com o administrador do sistema para redefinir sua senha.
+          </AlertDescription>
+        </Alert>
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center">
@@ -131,10 +139,6 @@ export function LoginForm() {
                 Lembrar meu email
               </label>
             </div>
-
-            <a href="#" className="text-sm font-medium text-primary hover:underline">
-              Esqueceu sua senha?
-            </a>
           </div>
 
           <Button 
