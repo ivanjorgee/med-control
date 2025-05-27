@@ -1,5 +1,6 @@
 
 import { DistributionTabs } from "./table/DistributionTabs";
+import { DistributionStats } from "./table/DistributionStats";
 
 interface Distribution {
   id: string;
@@ -34,5 +35,10 @@ interface DistributionTableProps {
 }
 
 export const DistributionTable = (props: DistributionTableProps) => {
-  return <DistributionTabs {...props} />;
+  return (
+    <div>
+      <DistributionStats distributions={props.distributions} />
+      <DistributionTabs {...props} />
+    </div>
+  );
 };

@@ -1,10 +1,7 @@
 
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/button";
-import { Check, Truck } from "lucide-react";
-import { format } from "date-fns";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { DistributionEmpty } from "./DistributionEmpty";
+import { DistributionRow } from "./DistributionRow";
 
 interface Distribution {
   id: string;
@@ -48,43 +45,13 @@ export const DistributionsList = ({
       </TableHeader>
       <TableBody>
         {distributions.length > 0 ? distributions.map((distribution) => (
-          <TableRow key={distribution.id}>
-            <TableCell className="font-medium">{distribution.medicineName}</TableCell>
-            <TableCell>{distribution.batchNumber}</TableCell>
-            <TableCell>{distribution.quantity}</TableCell>
-            <TableCell>{distribution.sourceLocation}</TableCell>
-            <TableCell>{distribution.destinationLocation}</TableCell>
-            <TableCell>{distribution.requestedBy}</TableCell>
-            <TableCell>{format(new Date(distribution.date), "dd/MM/yyyy")}</TableCell>
-            <TableCell>
-              <StatusBadge status={distribution.status} />
-            </TableCell>
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-2">
-                {isAdmin && distribution.status === "pending" && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={() => onApprove(distribution.id)}
-                  >
-                    <Check className="h-4 w-4 mr-1" /> Aprovar
-                  </Button>
-                )}
-                {(isAdmin && distribution.status === "approved") && (
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => onDeliver(distribution.id)}
-                  >
-                    <Truck className="h-4 w-4 mr-1" /> Entregar
-                  </Button>
-                )}
-                <Button variant="ghost" size="sm">
-                  Detalhes
-                </Button>
-              </div>
-            </TableCell>
-          </TableRow>
+          <DistributionRow
+            key={distribution.id}
+            distribution={distribution}
+            onApprove={onApprove}
+            onDeliver={onDeliver}
+            isAdmin={isAdmin}
+          />
         )) : (
           <TableRow>
             <TableCell colSpan={9} className="text-center">
