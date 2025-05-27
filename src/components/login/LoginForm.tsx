@@ -8,7 +8,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { LoginHints } from "./LoginHints";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function LoginForm() {
@@ -157,8 +156,10 @@ export function LoginForm() {
       </CardContent>
       <CardFooter className="flex flex-col space-y-4 pt-0">
         <Separator className="my-2" />
-        <div className="w-full">
-          <LoginHints />
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">
+            Use suas credenciais cadastradas no sistema para acessar.
+          </p>
         </div>
       </CardFooter>
     </Card>
