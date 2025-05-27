@@ -20,5 +20,5 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  base: process.env.ELECTRON_NODE_ENV === 'production' ? './' : '/',
+  base: './',
 }));
