@@ -26,11 +26,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const auth = localStorage.getItem("medcontrol-auth");
     const userData = localStorage.getItem("medcontrol-user");
     
+    console.log("Verificando autenticação existente...", { auth, userData });
+    
     if (auth === "true" && userData) {
       setIsAuthenticated(true);
       try {
         const user = JSON.parse(userData) as AuthUserData;
         setAuthUser(user);
+        console.log("Usuário autenticado recuperado:", user);
       } catch (error) {
         console.error("Erro ao recuperar dados do usuário:", error);
         logout(); // Se os dados forem inválidos, faz logout
@@ -41,16 +44,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    console.log("Iniciando login para:", email);
+    console.log("=== INICIANDO PROCESSO DE LOGIN ===");
+    console.log("Email informado:", email);
+    console.log("Senha informada:", password);
+    
+    // Verificar se o localStorage tem dados
+    const allKeys = Object.keys(localStorage);
+    console.log("Chaves disponíveis no localStorage:", allKeys);
     
     // Buscar usuários cadastrados no localStorage
     const storedUsers = localStorage.getItem("users");
+    console.log("Dados brutos de usuários:", storedUsers);
+    
     if (!storedUsers) {
-      console.log("Nenhum usuário encontrado no localStorage");
+      console.log("❌ Nenhum usuário encontrado no localStorage");
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
-        description: "Nenhum usuário cadastrado no sistema."
+        description: "Nenhum usuário cadastrado no sistema. Configure o sistema primeiro."
       });
       return false;
     }
@@ -58,9 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let users;
     try {
       users = JSON.parse(storedUsers);
-      console.log("Usuários encontrados:", users.length);
+      console.log("✅ Usuários parseados com sucesso:", users);
+      console.log("Total de usuários encontrados:", users.length);
     } catch (error) {
-      console.error("Erro ao parsear usuários:", error);
+      console.error("❌ Erro ao parsear usuários:", error);
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -69,16 +81,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
+    // Log detalhado de cada usuário
+    users.forEach((u: any, index: number) => {
+      console.log(`Usuário ${index + 1}:`, {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        status: u.status
+      });
+    });
+
     // Buscar usuário com credenciais fornecidas
     const user = users.find((u: any) => {
-      console.log(`Verificando usuário: ${u.email}, senha: ${u.password}`);
-      return u.email === email && u.password === password;
+      const emailMatch = u.email === email;
+      const passwordMatch = u.password === password;
+      console.log(`Verificando ${u.email}: email=${emailMatch}, senha=${passwordMatch}`);
+      return emailMatch && passwordMatch;
     });
     
     if (!user) {
-      console.log("Usuário não encontrado ou senha incorreta");
+      console.log("❌ Usuário não encontrado ou senha incorreta");
       console.log("Email procurado:", email);
       console.log("Emails disponíveis:", users.map((u: any) => u.email));
+      console.log("Senhas disponíveis:", users.map((u: any) => u.password));
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -87,10 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false;
     }
     
-    console.log("Usuário encontrado:", user);
+    console.log("✅ Usuário encontrado:", user);
     
     if (user.status === "inactive") {
-      console.log("Usuário inativo");
+      console.log("❌ Usuário inativo");
       toast({
         variant: "destructive",
         title: "Usuário inativo",
@@ -109,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (location) {
           locationName = location.name;
         }
+        console.log("Localização encontrada:", locationName);
       } catch (error) {
         console.error("Erro ao buscar localização:", error);
       }
@@ -124,11 +151,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       locationName: locationName
     };
     
-    console.log("Dados do usuário autenticado:", authUserData);
+    console.log("✅ Dados do usuário autenticado:", authUserData);
     
-    // Salvar no localStorage
-    localStorage.setItem("medcontrol-auth", "true");
-    localStorage.setItem("medcontrol-user", JSON.stringify(authUserData));
+    // Salvar no localStorage com validação
+    try {
+      localStorage.setItem("medcontrol-auth", "true");
+      localStorage.setItem("medcontrol-user", JSON.stringify(authUserData));
+      
+      // Verificar se foi salvo corretamente
+      const savedAuth = localStorage.getItem("medcontrol-auth");
+      const savedUser = localStorage.getItem("medcontrol-user");
+      console.log("✅ Autenticação salva:", savedAuth);
+      console.log("✅ Usuário salvo:", savedUser);
+      
+    } catch (error) {
+      console.error("❌ Erro ao salvar no localStorage:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro de sistema",
+        description: "Erro ao salvar dados de autenticação."
+      });
+      return false;
+    }
     
     setAuthUser(authUserData);
     setIsAuthenticated(true);
@@ -138,14 +182,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       description: `Bem-vindo(a), ${user.name}!`,
     });
     
+    console.log("=== LOGIN CONCLUÍDO COM SUCESSO ===");
     return true;
   };
 
   const logout = () => {
+    console.log("Fazendo logout...");
     localStorage.removeItem("medcontrol-auth");
     localStorage.removeItem("medcontrol-user");
     setAuthUser(null);
     setIsAuthenticated(false);
+    console.log("Logout concluído");
   };
 
   // Não renderize nada enquanto está verificando a autenticação

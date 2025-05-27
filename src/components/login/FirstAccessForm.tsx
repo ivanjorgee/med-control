@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,8 @@ export function FirstAccessForm() {
     setIsLoading(true);
     
     try {
-      console.log("Iniciando configuração inicial do sistema...");
+      console.log("=== CONFIGURAÇÃO INICIAL DO SISTEMA ===");
+      console.log("Dados do formulário:", formData);
       
       // Validações
       if (!formData.name || !formData.email || !formData.password || !formData.locationName) {
@@ -81,7 +83,7 @@ export function FirstAccessForm() {
         status: "active"
       };
 
-      console.log("Localização criada:", newLocation);
+      console.log("✅ Localização criada:", newLocation);
 
       // Criar primeiro usuário administrador
       const userId = `user-${Date.now()}`;
@@ -99,27 +101,73 @@ export function FirstAccessForm() {
         phone: formData.locationPhone || ""
       };
 
-      console.log("Usuário administrador criado:", newUser);
+      console.log("✅ Usuário administrador criado:", newUser);
 
-      // Salvar no localStorage
-      localStorage.setItem("medcontrol_locations", JSON.stringify([newLocation]));
-      localStorage.setItem("users", JSON.stringify([newUser]));
-      localStorage.setItem("medcontrol-setup-complete", "true");
+      // Limpar localStorage anterior (se houver)
+      console.log("Limpando dados anteriores...");
+      localStorage.removeItem("medcontrol_locations");
+      localStorage.removeItem("users");
+      localStorage.removeItem("medcontrol-setup-complete");
+      localStorage.removeItem("medcontrol_medicines");
+      localStorage.removeItem("medcontrol_distributions");
+      localStorage.removeItem("medcontrol_medication_requests");
+      localStorage.removeItem("medcontrol_dispensations");
 
-      console.log("Dados salvos no localStorage");
-      console.log("Localizações:", localStorage.getItem("medcontrol_locations"));
-      console.log("Usuários:", localStorage.getItem("users"));
+      // Salvar no localStorage com validação
+      try {
+        localStorage.setItem("medcontrol_locations", JSON.stringify([newLocation]));
+        localStorage.setItem("users", JSON.stringify([newUser]));
+        localStorage.setItem("medcontrol-setup-complete", "true");
+        
+        // Inicializar outras estruturas de dados vazias
+        localStorage.setItem("medcontrol_medicines", JSON.stringify([]));
+        localStorage.setItem("medcontrol_distributions", JSON.stringify([]));
+        localStorage.setItem("medcontrol_medication_requests", JSON.stringify([]));
+        localStorage.setItem("medcontrol_dispensations", JSON.stringify([]));
+
+        // Verificar se foi salvo corretamente
+        const savedLocations = localStorage.getItem("medcontrol_locations");
+        const savedUsers = localStorage.getItem("users");
+        const setupComplete = localStorage.getItem("medcontrol-setup-complete");
+        
+        console.log("✅ Verificação pós-salvamento:");
+        console.log("Localizações salvas:", savedLocations);
+        console.log("Usuários salvos:", savedUsers);
+        console.log("Setup completo:", setupComplete);
+        
+        if (!savedLocations || !savedUsers || setupComplete !== "true") {
+          throw new Error("Dados não foram salvos corretamente");
+        }
+        
+      } catch (error) {
+        console.error("❌ Erro ao salvar no localStorage:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro na configuração",
+          description: "Erro ao salvar dados no sistema. Tente novamente."
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("=== CONFIGURAÇÃO CONCLUÍDA COM SUCESSO ===");
+      console.log("Dados finais no localStorage:");
+      console.log("- medcontrol_locations:", localStorage.getItem("medcontrol_locations"));
+      console.log("- users:", localStorage.getItem("users"));
+      console.log("- medcontrol-setup-complete:", localStorage.getItem("medcontrol-setup-complete"));
 
       toast({
         title: "Configuração concluída!",
         description: "Sistema configurado com sucesso. Faça login para continuar."
       });
 
-      // Redirecionar para login
-      navigate("/login");
+      // Redirecionar para login após pequeno delay
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
       
     } catch (error) {
-      console.error("Erro durante a configuração inicial:", error);
+      console.error("❌ Erro durante a configuração inicial:", error);
       toast({
         variant: "destructive",
         title: "Erro na configuração",

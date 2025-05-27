@@ -13,6 +13,7 @@ import { Form } from "@/components/ui/form";
 import { v4 as uuidv4 } from 'uuid';
 import { useNavigate } from "react-router-dom";
 import { useMedicines } from "@/contexts/MedicineContext";
+import { useToast } from "@/hooks/use-toast";
 
 export const medicationSchema = z.object({
   name: z.string().min(3, { message: "O nome deve ter pelo menos 3 caracteres" }),
@@ -38,6 +39,7 @@ export const MedicationForm = ({ defaultLocationId }: MedicationFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addMedicine } = useMedicines();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const form = useForm<MedicationFormValues>({
     resolver: zodResolver(medicationSchema),
@@ -59,6 +61,9 @@ export const MedicationForm = ({ defaultLocationId }: MedicationFormProps) => {
     setIsSubmitting(true);
     
     try {
+      console.log("=== CADASTRANDO NOVO MEDICAMENTO ===");
+      console.log("Dados do formulário:", data);
+      
       // Make sure all required fields are present before submitting
       if (!data.name || !data.category || !data.quantity || !data.measureUnit || 
           !data.batchNumber || !data.expirationDate || !data.manufacturer || 
@@ -101,16 +106,38 @@ export const MedicationForm = ({ defaultLocationId }: MedicationFormProps) => {
         locationId: data.locationId // Use the selected location ID
       };
       
+      console.log("✅ Medicamento preparado para cadastro:", medicineData);
+      
+      // Verificar o estado atual do localStorage antes de adicionar
+      const currentMedicines = localStorage.getItem("medcontrol_medicines");
+      console.log("Medicamentos atuais no localStorage:", currentMedicines);
+      
       // Adicionar o medicamento usando nosso contexto
       addMedicine(medicineData);
+      
+      // Verificar se foi salvo corretamente
+      const updatedMedicines = localStorage.getItem("medcontrol_medicines");
+      console.log("✅ Medicamentos após adição:", updatedMedicines);
+      
+      toast({
+        title: "Medicamento cadastrado",
+        description: `${data.name} foi cadastrado com sucesso no estoque.`
+      });
       
       // Resetar o formulário
       form.reset();
       
+      console.log("=== CADASTRO CONCLUÍDO COM SUCESSO ===");
+      
       // Redirecionar para a página de estoque
       navigate("/stock");
     } catch (error) {
-      console.error("Erro ao cadastrar medicamento:", error);
+      console.error("❌ Erro ao cadastrar medicamento:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao cadastrar",
+        description: "Ocorreu um erro ao cadastrar o medicamento. Tente novamente."
+      });
     } finally {
       setIsSubmitting(false);
     }
