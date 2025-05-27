@@ -11,6 +11,23 @@ export default function LoginPage() {
   const location = useLocation();
   const { isAuthenticated } = useAuth();
 
+  // Verificar se é o primeiro acesso
+  useEffect(() => {
+    const setupComplete = localStorage.getItem("medcontrol-setup-complete");
+    const users = localStorage.getItem("users");
+    
+    if (setupComplete !== "true" || !users) {
+      navigate("/first-access", { replace: true });
+      return;
+    }
+    
+    const usersList = JSON.parse(users);
+    if (usersList.length === 0) {
+      navigate("/first-access", { replace: true });
+      return;
+    }
+  }, [navigate]);
+
   // Redirecionar se já estiver autenticado
   useEffect(() => {
     if (isAuthenticated) {

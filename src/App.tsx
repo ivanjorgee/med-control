@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { MedicineProvider } from "@/contexts/MedicineContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import LoginPage from "./pages/login";
+import FirstAccessPage from "./pages/first-access";
 import Index from "./pages/Index";
 import StockPage from "./pages/stock";
 import DistributionPage from "./pages/distribution";
@@ -30,6 +31,7 @@ const App = () => (
           <BrowserRouter>
             <Toaster />
             <Routes>
+              <Route path="/first-access" element={<FirstAccessPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/about" element={<AboutPage />} />
               
