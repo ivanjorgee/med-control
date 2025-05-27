@@ -25,6 +25,14 @@ export const initializeDefaultData = () => {
   console.log("✅ Sistema marcado como configurado");
 };
 
+export const resetDefaultData = () => {
+  console.log("=== RESETANDO DADOS PADRÃO ===");
+  localStorage.setItem("users", JSON.stringify(DEFAULT_USERS));
+  localStorage.setItem("medcontrol_locations", JSON.stringify(DEFAULT_LOCATIONS));
+  localStorage.setItem("medcontrol-setup-complete", "true");
+  console.log("✅ Dados resetados com sucesso");
+};
+
 export const getLocationName = (locationId: string): string => {
   const storedLocations = localStorage.getItem("medcontrol_locations");
   let locationName = "Unidade Central de Saúde";
