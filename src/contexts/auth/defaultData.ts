@@ -38,7 +38,12 @@ export const DEFAULT_LOCATIONS: DefaultLocation[] = [
     name: "Unidade Central de Saúde",
     type: "hospital",
     address: "Rua Principal, 123",
+    city: "São Paulo",
+    state: "SP",
     phone: "(11) 99999-9999",
+    email: "central@medcontrol.com",
+    coordinator: "Administrador do Sistema",
+    createdAt: "2024-01-15T10:00:00",
     status: "active",
     coordinatorId: "admin-001"
   }

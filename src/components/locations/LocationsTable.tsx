@@ -16,6 +16,19 @@ interface LocationsTableProps {
   locationTypeLabels: Record<LocationType, string>;
 }
 
+const formatCreatedDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return "Data inválida";
+    }
+    return format(date, "dd/MM/yyyy");
+  } catch (error) {
+    console.error("Erro ao formatar data:", error);
+    return "Data inválida";
+  }
+};
+
 export const LocationsTable = ({
   locations,
   isLoading,
@@ -60,7 +73,7 @@ export const LocationsTable = ({
                   {location.city}/{location.state}
                 </TableCell>
                 <TableCell className="hidden lg:table-cell">
-                  {format(new Date(location.createdAt), "dd/MM/yyyy")}
+                  {formatCreatedDate(location.createdAt)}
                 </TableCell>
                 <TableCell>
                   <Badge variant={location.status === "active" ? "default" : "secondary"}>

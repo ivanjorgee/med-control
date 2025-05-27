@@ -35,7 +35,12 @@ export interface DefaultLocation {
   name: string;
   type: string;
   address: string;
+  city: string;
+  state: string;
   phone: string;
+  email: string;
+  coordinator: string;
+  createdAt: string;
   status: string;
   coordinatorId: string;
 }
