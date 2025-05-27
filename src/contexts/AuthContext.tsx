@@ -22,7 +22,7 @@ const DEFAULT_USERS = [
     name: "Administrador do Sistema",
     email: "sms.sjapa@gmail.com",
     password: "smss@2025",
-    role: "admin",
+    role: "admin" as UserRole,
     locationId: "loc-001",
     status: "active"
   },
@@ -31,7 +31,7 @@ const DEFAULT_USERS = [
     name: "Farmacêutico Responsável",
     email: "ivanjfm15@gmail.com",
     password: "Adbc102030",
-    role: "pharmacist",
+    role: "pharmacist" as UserRole,
     locationId: "loc-001",
     status: "active"
   },
@@ -40,7 +40,7 @@ const DEFAULT_USERS = [
     name: "Usuário Teste",
     email: "usuario@medcontrol.com",
     password: "user123",
-    role: "user",
+    role: "user" as UserRole,
     locationId: "loc-001", 
     status: "active"
   }
