@@ -15,7 +15,7 @@ export function useDistributionActions(
   setPendingRequests: SetPendingRequestsFunction
 ) {
   const { medicines, updateMedicine } = useMedicines();
-  const { authUser, isAdmin } = useAuth();
+  const { authUser, isAdmin, isPharmacist } = useAuth();
   const { toast } = useToast();
   
   // Function to create a new distribution
@@ -24,61 +24,96 @@ export function useDistributionActions(
     
     // Find the medicine and destination location
     const medicine = medicines.find(med => med.id === medicineId);
-    const destinationLocation = { id: destinationLocationId, name: "" }; // Will be populated in the page component
     
-    if (!medicine || !destinationLocation) {
+    if (!medicine) {
       toast({
         title: "Erro",
-        description: "Medicamento ou unidade de destino não encontrados.",
+        description: "Medicamento não encontrado.",
         variant: "destructive"
       });
       return;
     }
     
-    // Check if there's enough quantity
-    if (medicine.quantity < quantity) {
+    // Verificar permissões baseadas no role
+    if (isPharmacist && !isAdmin) {
+      // Farmacêuticos só podem solicitar medicamentos (criar pendências)
+      const newDistribution: DistributionRecord = {
+        id: uuidv4(),
+        medicineId: medicine.id,
+        medicineName: medicine.name,
+        batchNumber: medicine.batchNumber,
+        quantity: quantity,
+        sourceLocation: "Central de Distribuição",
+        destinationLocation: authUser?.locationName || "Unidade Solicitante",
+        requestedBy: authUser?.name || "Farmacêutico",
+        approvedBy: "",
+        date: new Date().toISOString(),
+        status: "pending",
+        locationId: authUser?.locationId || ""
+      };
+      
+      // Add to distributions as pending
+      setDistributions(prev => [newDistribution, ...prev]);
+      
       toast({
-        title: "Estoque insuficiente",
-        description: `Quantidade disponível: ${medicine.quantity} ${medicine.measureUnit}`,
-        variant: "destructive"
+        title: "Solicitação registrada",
+        description: `Solicitação de ${quantity} ${medicine.measureUnit} de ${medicine.name} foi enviada para aprovação.`
       });
-      return;
+      
+      return true;
     }
     
-    // Create the distribution record
-    const newDistribution: DistributionRecord = {
-      id: uuidv4(),
-      medicineId: medicine.id,
-      medicineName: medicine.name,
-      batchNumber: medicine.batchNumber,
-      quantity: quantity,
-      sourceLocation: "Farmácia Central",
-      destinationLocation: destinationLocation.name,
-      requestedBy: authUser?.name || "Sistema",
-      approvedBy: isAdmin ? (authUser?.name || "Administrador") : "",
-      date: new Date().toISOString(),
-      status: isAdmin ? "approved" : "pending",
-      locationId: medicine.locationId
-    };
-    
-    // Add to distributions
-    setDistributions(prev => [newDistribution, ...prev]);
-    
-    // If admin, update medicine quantity immediately
+    // Administradores podem distribuir diretamente
     if (isAdmin) {
+      // Check if there's enough quantity
+      if (medicine.quantity < quantity) {
+        toast({
+          title: "Estoque insuficiente",
+          description: `Quantidade disponível: ${medicine.quantity} ${medicine.measureUnit}`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const newDistribution: DistributionRecord = {
+        id: uuidv4(),
+        medicineId: medicine.id,
+        medicineName: medicine.name,
+        batchNumber: medicine.batchNumber,
+        quantity: quantity,
+        sourceLocation: "Central de Distribuição",
+        destinationLocation: "Unidade de Destino",
+        requestedBy: authUser?.name || "Administrador",
+        approvedBy: authUser?.name || "Administrador",
+        date: new Date().toISOString(),
+        status: "approved",
+        locationId: medicine.locationId
+      };
+      
+      // Add to distributions
+      setDistributions(prev => [newDistribution, ...prev]);
+      
+      // Update medicine quantity immediately
       const updatedMedicine = {
         ...medicine,
         quantity: medicine.quantity - quantity
       };
       updateMedicine(updatedMedicine);
+      
+      toast({
+        title: "Distribuição criada",
+        description: `Distribuição de ${quantity} ${medicine.measureUnit} de ${medicine.name} foi aprovada automaticamente.`
+      });
+      
+      return true;
     }
     
     toast({
-      title: "Distribuição criada",
-      description: `Distribuição de ${quantity} ${medicine.measureUnit} de ${medicine.name} para ${destinationLocation.name} foi registrada.`
+      title: "Acesso negado",
+      description: "Você não tem permissão para criar distribuições.",
+      variant: "destructive"
     });
-    
-    return true;
+    return false;
   };
   
   // Function to handle distribution approval
@@ -93,7 +128,7 @@ export function useDistributionActions(
     }
     
     setDistributions(prev => prev.map(dist => {
-      if (dist.id === distributionId) {
+      if (dist.id === distributionId && dist.status === "pending") {
         // Find the medicine to update quantity
         const medicine = medicines.find(med => med.id === dist.medicineId);
         if (medicine && medicine.quantity >= dist.quantity) {
@@ -103,6 +138,11 @@ export function useDistributionActions(
             quantity: medicine.quantity - dist.quantity
           };
           updateMedicine(updatedMedicine);
+          
+          toast({
+            title: "Distribuição aprovada",
+            description: `Distribuição de ${dist.medicineName} foi aprovada e está pronta para entrega.`
+          });
           
           return {
             ...dist,
@@ -120,17 +160,35 @@ export function useDistributionActions(
       }
       return dist;
     }));
-    
-    toast({
-      title: "Distribuição aprovada",
-      description: "A distribuição foi aprovada com sucesso."
-    });
   };
   
   // Function to handle distribution delivery confirmation
   const handleDeliverDistribution = (distributionId: string) => {
+    // Farmacêuticos podem confirmar entrega na sua unidade
+    // Administradores podem confirmar qualquer entrega
+    const distribution = distributions.find(d => d.id === distributionId);
+    
+    if (!distribution) return;
+    
+    // Verificar se o farmacêutico pode confirmar esta entrega
+    if (isPharmacist && !isAdmin) {
+      if (distribution.locationId !== authUser?.locationId) {
+        toast({
+          title: "Acesso negado",
+          description: "Você só pode confirmar entregas da sua unidade.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     setDistributions(prev => prev.map(dist => {
-      if (dist.id === distributionId) {
+      if (dist.id === distributionId && dist.status === "approved") {
+        toast({
+          title: "Entrega confirmada",
+          description: `Entrega de ${dist.medicineName} foi confirmada com sucesso.`
+        });
+        
         return {
           ...dist,
           status: "delivered"
@@ -138,15 +196,19 @@ export function useDistributionActions(
       }
       return dist;
     }));
-    
-    toast({
-      title: "Entrega confirmada",
-      description: "A entrega da distribuição foi confirmada com sucesso."
-    });
   };
   
   // Function to handle request approval and conversion to distribution
   const handleApproveRequest = (requestId: string) => {
+    if (!isAdmin) {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem aprovar solicitações.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Find the request
     const request = pendingRequests.find(req => req.id === requestId);
     if (!request) return;
@@ -158,7 +220,7 @@ export function useDistributionActions(
       medicineName: request.medicationName,
       batchNumber: "Auto",
       quantity: Number(request.quantity),
-      sourceLocation: "Farmácia Central",
+      sourceLocation: "Central de Distribuição",
       destinationLocation: request.unitName || "Unidade Solicitante",
       requestedBy: request.requesterName,
       approvedBy: authUser?.name || "Administrador",
@@ -171,14 +233,13 @@ export function useDistributionActions(
     setDistributions(prev => [newDistribution, ...prev]);
     
     // Remove from pending requests
-    setPendingRequests(prev => prev.filter(req => req.id !== requestId));
-    localStorage.setItem('medcontrol_medication_requests', JSON.stringify(
-      pendingRequests.filter(req => req.id !== requestId)
-    ));
+    const updatedRequests = pendingRequests.filter(req => req.id !== requestId);
+    setPendingRequests(updatedRequests);
+    localStorage.setItem('medcontrol_medication_requests', JSON.stringify(updatedRequests));
     
     toast({
       title: "Solicitação aprovada",
-      description: `Solicitação de ${request.medicationName} foi aprovada e convertida em distribuição.`
+      description: `Solicitação de ${request.medicationName} foi aprovada e está pronta para entrega.`
     });
   };
 

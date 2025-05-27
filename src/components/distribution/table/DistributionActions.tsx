@@ -1,6 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Check, Truck } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface DistributionActionsProps {
   distributionId: string;
@@ -8,6 +9,7 @@ interface DistributionActionsProps {
   isAdmin: boolean;
   onApprove: (id: string) => void;
   onDeliver: (id: string) => void;
+  locationId?: string;
 }
 
 export const DistributionActions = ({
@@ -15,8 +17,14 @@ export const DistributionActions = ({
   status,
   isAdmin,
   onApprove,
-  onDeliver
+  onDeliver,
+  locationId
 }: DistributionActionsProps) => {
+  const { authUser, isPharmacist } = useAuth();
+  
+  // Verifica se o farmacêutico pode confirmar entrega desta distribuição
+  const canConfirmDelivery = isAdmin || (isPharmacist && locationId === authUser?.locationId);
+
   return (
     <div className="flex justify-end gap-2">
       {isAdmin && status === "pending" && (
@@ -28,13 +36,13 @@ export const DistributionActions = ({
           <Check className="h-4 w-4 mr-1" /> Aprovar
         </Button>
       )}
-      {isAdmin && status === "approved" && (
+      {canConfirmDelivery && status === "approved" && (
         <Button 
           variant="outline" 
           size="sm"
           onClick={() => onDeliver(distributionId)}
         >
-          <Truck className="h-4 w-4 mr-1" /> Entregar
+          <Truck className="h-4 w-4 mr-1" /> Confirmar Entrega
         </Button>
       )}
       <Button variant="ghost" size="sm">

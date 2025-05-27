@@ -14,6 +14,7 @@ interface Distribution {
   requestedBy: string;
   date: string;
   status: "pending" | "approved" | "delivered" | "cancelled";
+  locationId?: string;
 }
 
 interface DistributionRowProps {
@@ -48,6 +49,7 @@ export const DistributionRow = ({
           isAdmin={isAdmin}
           onApprove={onApprove}
           onDeliver={onDeliver}
+          locationId={distribution.locationId}
         />
       </TableCell>
     </TableRow>

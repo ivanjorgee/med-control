@@ -13,6 +13,7 @@ interface Distribution {
   requestedBy: string;
   date: string;
   status: "pending" | "approved" | "delivered" | "cancelled";
+  locationId?: string;
 }
 
 interface DistributionsListProps {

@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useState, useEffect } from "react";
 import { User, Location } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import UserSearch from "@/components/permissions/UserSearch";
 import UserTabs from "@/components/permissions/UserTabs";
 import PermissionTypesSection from "@/components/permissions/PermissionTypesSection";
@@ -13,6 +14,7 @@ const PermissionsPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const { toast } = useToast();
+  const { authUser, isAdmin } = useAuth();
   
   // Load users and locations from localStorage
   useEffect(() => {
@@ -27,6 +29,20 @@ const PermissionsPage = () => {
       setLocations(JSON.parse(storedLocations));
     }
   }, []);
+
+  // Verificar se o usuário é administrador
+  if (!isAdmin) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-600">Acesso Negado</h2>
+            <p className="text-gray-500 mt-2">Apenas administradores podem acessar o controle de permissões.</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
   
   // Filter authorized and unauthorized users
   const authorizedUsers = users.filter((user) => 
@@ -45,7 +61,9 @@ const PermissionsPage = () => {
     switch (role) {
       case "admin": return "Administração";
       case "pharmacist": return "Farmácia";
-      default: return role;
+      case "distributor": return "Distribuição";
+      case "health_unit": return "Unidade de Saúde";
+      default: return "Usuário";
     }
   };
 
@@ -60,27 +78,43 @@ const PermissionsPage = () => {
   
   // Function to update user permissions
   const handleTogglePermission = (userId: string, permissionType: 'distribution' | 'release' | 'stock', value: boolean) => {
-    // Get the user
     const user = users.find(u => u.id === userId);
     
-    // If user is not admin and trying to get stock permissions, prevent it
-    if (user && user.role !== "admin" && permissionType === 'stock' && value) {
-      toast({
-        title: "Permissão restrita",
-        description: "Apenas administradores podem ter permissão de ajuste de estoque.",
-        variant: "destructive"
-      });
-      return;
+    // Validações de permissão baseadas no role
+    if (permissionType === 'distribution' && value) {
+      // Apenas administradores podem ter permissão de distribuição entre unidades
+      if (user && user.role !== "admin") {
+        toast({
+          title: "Permissão restrita",
+          description: "Apenas administradores podem distribuir medicamentos entre unidades. Farmacêuticos dispensam para pacientes.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    if (permissionType === 'stock' && value) {
+      // Apenas administradores podem ter permissão de ajuste de estoque
+      if (user && user.role !== "admin") {
+        toast({
+          title: "Permissão restrita",
+          description: "Apenas administradores podem ter permissão de ajuste de estoque.",
+          variant: "destructive"
+        });
+        return;
+      }
     }
     
     // Update user with new permission
     const updatedUsers = users.map(user => {
       if (user.id === userId) {
-        // In a real system, you would have separate fields for each permission type
-        return {
-          ...user,
-          canApprove: permissionType === 'distribution' ? value : user.canApprove
-        };
+        const updatedUser = { ...user };
+        
+        if (permissionType === 'distribution') {
+          updatedUser.canApprove = value;
+        }
+        
+        return updatedUser;
       }
       return user;
     });

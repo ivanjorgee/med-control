@@ -14,7 +14,7 @@ export const DistributionHeader = ({
   const { toast } = useToast();
   const { authUser, isAdmin, isPharmacist } = useAuth();
   
-  // Determina se o usuário pode adicionar distribuições
+  // Determina se o usuário pode solicitar/criar distribuições
   const canAddDistribution = isAdmin || isPharmacist;
 
   const handleAddClick = () => {
@@ -24,8 +24,28 @@ export const DistributionHeader = ({
       toast({
         variant: "destructive",
         title: "Acesso negado",
-        description: "Você não tem permissão para adicionar distribuições."
+        description: "Você não tem permissão para solicitar distribuições."
       });
+    }
+  };
+
+  const getDescription = () => {
+    if (isAdmin) {
+      return "Gerencie a distribuição de medicamentos entre unidades de saúde.";
+    } else if (isPharmacist) {
+      return "Solicite medicamentos para sua unidade e confirme entregas recebidas.";
+    } else {
+      return "Acompanhe o status das distribuições de medicamentos.";
+    }
+  };
+
+  const getButtonText = () => {
+    if (isAdmin) {
+      return "Nova Distribuição";
+    } else if (isPharmacist) {
+      return "Solicitar Medicamento";
+    } else {
+      return "Nova Distribuição";
     }
   };
 
@@ -34,15 +54,11 @@ export const DistributionHeader = ({
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Distribuição de Medicamentos</h1>
         <p className="text-muted-foreground">
-          {isAdmin 
-            ? "Gerencie a distribuição de medicamentos para unidades de saúde."
-            : isPharmacist 
-            ? "Aprove e gerencie distribuições de medicamentos."
-            : "Acompanhe o status das distribuições de medicamentos."}
+          {getDescription()}
         </p>
       </div>
       <Button onClick={handleAddClick}>
-        <Plus className="mr-2 h-4 w-4" /> Nova Distribuição
+        <Plus className="mr-2 h-4 w-4" /> {getButtonText()}
       </Button>
     </div>
   );
