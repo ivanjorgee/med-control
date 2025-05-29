@@ -55,10 +55,21 @@ export function useDistributionActions(
       // Add to distributions as pending
       setDistributions(prev => [newDistribution, ...prev]);
       
+      // Mostrar notificação persistente para o farmacêutico
       toast({
         title: "Solicitação registrada",
-        description: `Solicitação de ${quantity} ${medicine.measureUnit} de ${medicine.name} foi enviada para aprovação.`
+        description: `Solicitação de ${quantity} ${medicine.measureUnit} de ${medicine.name} foi enviada para aprovação.`,
+        duration: 5000,
       });
+
+      // Mostrar notificação especial se houver administradores online (simulação)
+      setTimeout(() => {
+        toast({
+          title: "📢 Notificação para Administradores",
+          description: `Uma nova solicitação de medicamento está aguardando aprovação no dashboard.`,
+          duration: 8000,
+        });
+      }, 1000);
       
       return true;
     }
@@ -239,7 +250,8 @@ export function useDistributionActions(
     
     toast({
       title: "Solicitação aprovada",
-      description: `Solicitação de ${request.medicationName} foi aprovada e está pronta para entrega.`
+      description: `Solicitação de ${request.medicationName} foi aprovada e está pronta para entrega.`,
+      duration: 5000,
     });
   };
 

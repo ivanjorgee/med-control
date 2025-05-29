@@ -1,6 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, Calendar, Package, PackageCheck } from "lucide-react";
+import { AlertTriangle, Calendar, Package, PackageCheck, Clock } from "lucide-react";
 import { useMedicines } from "@/contexts/MedicineContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { addMonths, isBefore, isAfter } from "date-fns";
@@ -35,6 +35,7 @@ export function DashboardStats() {
   const { medicines } = useMedicines();
   const { authUser, isAdmin } = useAuth();
   const [distributedThisMonth, setDistributedThisMonth] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
   
   // Filtrar medicamentos baseado na unidade do usuário
   const userMedicines = isAdmin ? medicines : medicines.filter(med => 
@@ -63,6 +64,15 @@ export function DashboardStats() {
       
       setDistributedThisMonth(totalDistributed);
     }
+
+    // Contar solicitações pendentes (apenas para admin)
+    if (isAdmin) {
+      const savedRequests = localStorage.getItem('medcontrol_medication_requests');
+      if (savedRequests) {
+        const requests = JSON.parse(savedRequests);
+        setPendingRequests(requests.length);
+      }
+    }
   }, [authUser, isAdmin]);
   
   // Calcula estatísticas
@@ -84,7 +94,7 @@ export function DashboardStats() {
   ).length;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
       <StatCard
         title="Total em Estoque"
         value={totalInStock}
@@ -109,6 +119,15 @@ export function DashboardStats() {
         description="Em baixo estoque"
         icon={<AlertTriangle className="h-4 w-4 text-[#DC3545]" />}
       />
+      {isAdmin && (
+        <StatCard
+          title="Solicitações Pendentes"
+          value={pendingRequests}
+          description="Aguardando aprovação"
+          icon={<Clock className="h-4 w-4 text-[#FF6B6B]" />}
+          className={pendingRequests > 0 ? "border-red-200 bg-red-50" : ""}
+        />
+      )}
     </div>
   );
 }
