@@ -15,32 +15,28 @@ export function ProtectedRoute({
   requiresDistributor = false,
   requiresHealthUnit = false
 }: ProtectedRouteProps) {
-  const { isAuthenticated, profile, isLoading } = useAuth();
+  const { isAuthenticated, authUser } = useAuth();
   const location = useLocation();
-  
-  if (isLoading) {
-    return <div>Carregando...</div>;
-  }
   
   // Se não estiver autenticado, redireciona para o login
   if (!isAuthenticated) {
-    return <Navigate to="/auth" state={{ from: location }} replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
   
   // Verificações de permissão baseadas na role do usuário
-  if (requiresAdmin && profile?.role !== "admin") {
+  if (requiresAdmin && authUser?.role !== "admin") {
     return <Navigate to="/" replace />;
   }
   
-  if (requiresPharmacist && profile?.role !== "pharmacist" && profile?.role !== "admin") {
+  if (requiresPharmacist && authUser?.role !== "pharmacist" && authUser?.role !== "admin") {
     return <Navigate to="/" replace />;
   }
   
-  if (requiresDistributor && profile?.role !== "distributor" && profile?.role !== "admin") {
+  if (requiresDistributor && authUser?.role !== "distributor" && authUser?.role !== "admin") {
     return <Navigate to="/" replace />;
   }
   
-  if (requiresHealthUnit && profile?.role !== "health_unit" && profile?.role !== "admin") {
+  if (requiresHealthUnit && authUser?.role !== "health_unit" && authUser?.role !== "admin") {
     return <Navigate to="/" replace />;
   }
   

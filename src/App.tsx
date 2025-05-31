@@ -2,11 +2,12 @@
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MedicineProvider } from "@/contexts/MedicineContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import AuthPage from "./pages/auth";
+import LoginPage from "./pages/login";
+import FirstAccessPage from "./pages/first-access";
 import Index from "./pages/Index";
 import StockPage from "./pages/stock";
 import DistributionPage from "./pages/distribution";
@@ -30,7 +31,8 @@ const App = () => (
           <BrowserRouter>
             <Toaster />
             <Routes>
-              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/first-access" element={<FirstAccessPage />} />
+              <Route path="/login" element={<LoginPage />} />
               <Route path="/about" element={<AboutPage />} />
               
               {/* Rotas protegidas para todos os usuários */}
