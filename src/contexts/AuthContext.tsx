@@ -40,38 +40,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(session);
         
         if (session?.user) {
-          // Fetch user profile from database
-          const { data: profile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
+          try {
+            // Buscar perfil do usuário na tabela profiles
+            const { data: profile, error } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
 
-          if (profile && !error) {
-            // Fetch location name if location_id exists
-            let locationName = null;
-            if (profile.location_id) {
-              const { data: location } = await supabase
-                .from('locations')
-                .select('name')
-                .eq('id', profile.location_id)
-                .single();
-              locationName = location?.name;
+            if (profile && !error) {
+              // Buscar nome da localização se location_id existir
+              let locationName = null;
+              if (profile.location_id) {
+                const { data: location } = await supabase
+                  .from('locations')
+                  .select('name')
+                  .eq('id', profile.location_id)
+                  .maybeSingle();
+                locationName = location?.name || null;
+              }
+
+              const authUserData: AuthUserData = {
+                id: profile.id,
+                name: profile.name,
+                email: profile.email,
+                role: profile.role,
+                locationId: profile.location_id,
+                locationName: locationName
+              };
+              
+              setAuthUser(authUserData);
+              setIsAuthenticated(true);
+            } else {
+              console.error("Erro ao buscar perfil:", error);
+              // Se não encontrar perfil, criar um básico com dados do usuário
+              const basicUserData: AuthUserData = {
+                id: session.user.id,
+                name: session.user.email?.split('@')[0] || 'Usuário',
+                email: session.user.email || '',
+                role: 'user'
+              };
+              setAuthUser(basicUserData);
+              setIsAuthenticated(true);
             }
-
-            const authUserData: AuthUserData = {
-              id: profile.id,
-              name: profile.name,
-              email: profile.email,
-              role: profile.role,
-              locationId: profile.location_id,
-              locationName: locationName
-            };
-            
-            setAuthUser(authUserData);
-            setIsAuthenticated(true);
-          } else {
-            console.error("Error fetching profile:", error);
+          } catch (error) {
+            console.error("Erro ao processar dados do usuário:", error);
             setAuthUser(null);
             setIsAuthenticated(false);
           }
@@ -94,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    console.log("Attempting login with:", email);
+    console.log("Tentando login com:", email);
     
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -103,18 +116,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) {
-        console.error("Login error:", error);
+        console.error("Erro no login:", error);
+        let errorMessage = "Erro ao autenticar";
+        
+        if (error.message.includes("Invalid login credentials")) {
+          errorMessage = "Email ou senha incorretos";
+        } else if (error.message.includes("Email not confirmed")) {
+          errorMessage = "Email não confirmado. Verifique sua caixa de entrada.";
+        }
+        
         toast({
           variant: "destructive",
           title: "Erro ao autenticar",
-          description: error.message === "Invalid login credentials" 
-            ? "Email ou senha incorretos" 
-            : error.message
+          description: errorMessage
         });
         return false;
       }
 
       if (data.user) {
+        console.log("Login bem-sucedido:", data.user);
         toast({
           title: "Login bem-sucedido",
           description: `Bem-vindo(a)!`,
@@ -124,7 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return false;
     } catch (error) {
-      console.error("Login exception:", error);
+      console.error("Exceção no login:", error);
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
@@ -135,10 +155,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    console.log("Logging out...");
+    console.log("Fazendo logout...");
     const { error } = await supabase.auth.signOut();
     if (error) {
-      console.error("Logout error:", error);
+      console.error("Erro no logout:", error);
+      toast({
+        variant: "destructive",
+        title: "Erro ao sair",
+        description: "Erro ao fazer logout"
+      });
+    } else {
+      toast({
+        title: "Logout realizado",
+        description: "Você saiu do sistema com sucesso"
+      });
     }
     // The auth state change will handle clearing the state
   };
