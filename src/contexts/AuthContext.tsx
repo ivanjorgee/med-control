@@ -1,8 +1,27 @@
+
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
-import { AuthUserData, AuthContextType } from "./auth/types";
-import { AuthService } from "./auth/authService";
-import { initializeDefaultData, forceUpdateUserData, forceUpdateLocationData } from "./auth/authUtils";
+import { User, Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+interface AuthUserData {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  locationId?: string;
+  locationName?: string;
+}
+
+interface AuthContextType {
+  isAuthenticated: boolean;
+  authUser: AuthUserData | null;
+  login: (email: string, password: string) => Promise<boolean>;
+  logout: () => void;
+  isAdmin: boolean;
+  isPharmacist: boolean;
+  canApproveDistribution: boolean;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -10,59 +29,115 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [authUser, setAuthUser] = useState<AuthUserData | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Inicializar dados padrão primeiro
-    initializeDefaultData();
-    
-    // Forçar atualização dos dados de usuário para garantir consistência
-    forceUpdateUserData();
-    
-    // Forçar atualização dos dados de localização para garantir consistência
-    forceUpdateLocationData();
-    
-    // Check if user is authenticated when component mounts
-    const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
-    
-    if (stored && user) {
-      setIsAuthenticated(true);
-      setAuthUser(user);
-    }
-    
-    setIsLoading(false);
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("Auth state changed:", event, session);
+        setSession(session);
+        
+        if (session?.user) {
+          // Fetch user profile from database
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select(`
+              *,
+              locations:location_id (
+                name
+              )
+            `)
+            .eq('id', session.user.id)
+            .single();
+
+          if (profile && !error) {
+            const authUserData: AuthUserData = {
+              id: profile.id,
+              name: profile.name,
+              email: profile.email,
+              role: profile.role,
+              locationId: profile.location_id,
+              locationName: profile.locations?.name
+            };
+            
+            setAuthUser(authUserData);
+            setIsAuthenticated(true);
+          } else {
+            console.error("Error fetching profile:", error);
+            setAuthUser(null);
+            setIsAuthenticated(false);
+          }
+        } else {
+          setAuthUser(null);
+          setIsAuthenticated(false);
+        }
+        
+        setIsLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session:", session);
+      // The onAuthStateChange will handle the session
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const result = await AuthService.authenticateUser(email, password);
+    console.log("Attempting login with:", email);
     
-    if (result.success && result.user) {
-      setAuthUser(result.user);
-      setIsAuthenticated(true);
-      
-      toast({
-        title: "Login bem-sucedido",
-        description: `Bem-vindo(a), ${result.user.name}!`,
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       });
-      
-      return true;
-    } else {
+
+      if (error) {
+        console.error("Login error:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao autenticar",
+          description: error.message === "Invalid login credentials" 
+            ? "Email ou senha incorretos" 
+            : error.message
+        });
+        return false;
+      }
+
+      if (data.user) {
+        toast({
+          title: "Login bem-sucedido",
+          description: `Bem-vindo(a)!`,
+        });
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Login exception:", error);
       toast({
         variant: "destructive",
         title: "Erro ao autenticar",
-        description: result.error || "Erro desconhecido"
+        description: "Erro desconhecido durante o login"
       });
       return false;
     }
   };
 
-  const logout = () => {
-    AuthService.logout();
-    setAuthUser(null);
-    setIsAuthenticated(false);
+  const logout = async () => {
+    console.log("Logging out...");
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Logout error:", error);
+    }
+    // The auth state change will handle clearing the state
   };
 
-  // Não renderize nada enquanto está verificando a autenticação
+  // Don't render anything while loading
   if (isLoading) {
     return null;
   }
