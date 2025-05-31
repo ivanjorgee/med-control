@@ -43,23 +43,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // Fetch user profile from database
           const { data: profile, error } = await supabase
             .from('profiles')
-            .select(`
-              *,
-              locations:location_id (
-                name
-              )
-            `)
+            .select('*')
             .eq('id', session.user.id)
             .single();
 
           if (profile && !error) {
+            // Fetch location name if location_id exists
+            let locationName = null;
+            if (profile.location_id) {
+              const { data: location } = await supabase
+                .from('locations')
+                .select('name')
+                .eq('id', profile.location_id)
+                .single();
+              locationName = location?.name;
+            }
+
             const authUserData: AuthUserData = {
               id: profile.id,
               name: profile.name,
               email: profile.email,
               role: profile.role,
               locationId: profile.location_id,
-              locationName: profile.locations?.name
+              locationName: locationName
             };
             
             setAuthUser(authUserData);
