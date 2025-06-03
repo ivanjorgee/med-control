@@ -43,7 +43,9 @@ const AuthorizedUsersTable: React.FC<AuthorizedUsersTableProps> = ({
     <>
       {users.map((user) => {
         const isAdmin = user.role === "admin";
+        const isPharmacist = user.role === "pharmacist";
         const locationName = getLocationName(user.locationId);
+        
         return (
           <TableRow key={user.id} className="hover:bg-muted/20">
             <TableCell>
@@ -69,23 +71,25 @@ const AuthorizedUsersTable: React.FC<AuthorizedUsersTableProps> = ({
             <TableCell>
               <PermissionToggle
                 id={`dist-${user.id}`}
-                defaultChecked={true}
+                defaultChecked={isAdmin}
                 onToggle={(checked) => onTogglePermission(user.id, 'distribution', checked)}
+                disabled={false}
               />
             </TableCell>
             <TableCell>
               <PermissionToggle
                 id={`release-${user.id}`}
-                defaultChecked={user.role === "pharmacist" || user.role === "admin"}
+                defaultChecked={isPharmacist || isAdmin}
                 onToggle={(checked) => onTogglePermission(user.id, 'release', checked)}
+                disabled={false}
               />
             </TableCell>
             <TableCell>
               <PermissionToggle
                 id={`stock-${user.id}`}
                 defaultChecked={isAdmin}
-                disabled={!isAdmin}
                 onToggle={(checked) => onTogglePermission(user.id, 'stock', checked)}
+                disabled={false}
               />
             </TableCell>
             <TableCell className="text-right">

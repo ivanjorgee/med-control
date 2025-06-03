@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
@@ -18,9 +18,21 @@ const PermissionToggle: React.FC<PermissionToggleProps> = ({
 }) => {
   const [isChecked, setIsChecked] = useState(defaultChecked);
 
+  // Atualizar o estado quando defaultChecked mudar
+  useEffect(() => {
+    setIsChecked(defaultChecked);
+  }, [defaultChecked]);
+
   const handleChange = (checked: boolean) => {
-    setIsChecked(checked);
-    onToggle(checked);
+    console.log(`=== TOGGLE PERMISSÃO (${id}) ===`);
+    console.log("Valor anterior:", isChecked);
+    console.log("Novo valor:", checked);
+    console.log("Disabled:", disabled);
+    
+    if (!disabled) {
+      setIsChecked(checked);
+      onToggle(checked);
+    }
   };
 
   return (

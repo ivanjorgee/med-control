@@ -22,11 +22,18 @@ const PermissionsPage = () => {
     const storedLocations = localStorage.getItem("medcontrol_locations");
     
     if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
+      const parsedUsers = JSON.parse(storedUsers);
+      console.log("=== USUÁRIOS CARREGADOS ===");
+      console.log("Total de usuários:", parsedUsers.length);
+      console.log("Usuários:", parsedUsers);
+      setUsers(parsedUsers);
     }
     
     if (storedLocations) {
-      setLocations(JSON.parse(storedLocations));
+      const parsedLocations = JSON.parse(storedLocations);
+      console.log("=== LOCALIZAÇÕES CARREGADAS ===");
+      console.log("Total de localizações:", parsedLocations.length);
+      setLocations(parsedLocations);
     }
   }, []);
 
@@ -78,50 +85,73 @@ const PermissionsPage = () => {
   
   // Function to update user permissions
   const handleTogglePermission = (userId: string, permissionType: 'distribution' | 'release' | 'stock', value: boolean) => {
+    console.log("=== ALTERANDO PERMISSÃO ===");
+    console.log("Usuário ID:", userId);
+    console.log("Tipo de permissão:", permissionType);
+    console.log("Novo valor:", value);
+    
     const user = users.find(u => u.id === userId);
+    console.log("Usuário encontrado:", user);
     
-    // Validações de permissão baseadas no role
-    if (permissionType === 'distribution' && value) {
-      // Apenas administradores podem ter permissão de distribuição entre unidades
-      if (user && user.role !== "admin") {
-        toast({
-          title: "Permissão restrita",
-          description: "Apenas administradores podem distribuir medicamentos entre unidades. Farmacêuticos dispensam para pacientes.",
-          variant: "destructive"
-        });
-        return;
-      }
+    if (!user) {
+      toast({
+        title: "Erro",
+        description: "Usuário não encontrado.",
+        variant: "destructive"
+      });
+      return;
     }
-    
-    if (permissionType === 'stock' && value) {
-      // Apenas administradores podem ter permissão de ajuste de estoque
-      if (user && user.role !== "admin") {
-        toast({
-          title: "Permissão restrita",
-          description: "Apenas administradores podem ter permissão de ajuste de estoque.",
-          variant: "destructive"
-        });
-        return;
-      }
+
+    // Para administradores, todas as permissões são permitidas
+    if (authUser?.role !== "admin") {
+      toast({
+        title: "Acesso negado",
+        description: "Apenas administradores podem alterar permissões.",
+        variant: "destructive"
+      });
+      return;
     }
     
     // Update user with new permission
-    const updatedUsers = users.map(user => {
-      if (user.id === userId) {
-        const updatedUser = { ...user };
+    const updatedUsers = users.map(currentUser => {
+      if (currentUser.id === userId) {
+        const updatedUser = { ...currentUser };
         
-        if (permissionType === 'distribution') {
-          updatedUser.canApprove = value;
+        // Criar objeto de permissões se não existir
+        if (!updatedUser.permissions) {
+          updatedUser.permissions = {
+            canDistribute: false,
+            canRelease: false,
+            canAdjustStock: false
+          };
         }
         
+        // Atualizar a permissão específica
+        switch (permissionType) {
+          case 'distribution':
+            updatedUser.permissions.canDistribute = value;
+            updatedUser.canApprove = value; // Manter compatibilidade
+            break;
+          case 'release':
+            updatedUser.permissions.canRelease = value;
+            break;
+          case 'stock':
+            updatedUser.permissions.canAdjustStock = value;
+            break;
+        }
+        
+        console.log("Usuário atualizado:", updatedUser);
         return updatedUser;
       }
-      return user;
+      return currentUser;
     });
     
     // Update state and localStorage
     setUsers(updatedUsers);
     localStorage.setItem("users", JSON.stringify(updatedUsers));
+    
+    console.log("=== PERMISSÕES SALVAS ===");
+    console.log("Usuários atualizados salvos no localStorage");
     
     // Show confirmation toast
     toast({
@@ -136,9 +166,22 @@ const PermissionsPage = () => {
   
   // Function to grant general access (move from unauthorized to authorized)
   const handleGrantAccess = (userId: string) => {
+    console.log("=== CONCEDENDO ACESSO GERAL ===");
+    console.log("Usuário ID:", userId);
+    
     const updatedUsers = users.map(user => {
       if (user.id === userId) {
-        return { ...user, canApprove: true };
+        const updatedUser = { 
+          ...user, 
+          canApprove: true,
+          permissions: {
+            canDistribute: user.role === "admin",
+            canRelease: user.role === "pharmacist" || user.role === "admin",
+            canAdjustStock: user.role === "admin"
+          }
+        };
+        console.log("Usuário com acesso concedido:", updatedUser);
+        return updatedUser;
       }
       return user;
     });
@@ -154,9 +197,22 @@ const PermissionsPage = () => {
   
   // Function to revoke general access
   const handleRevokeAccess = (userId: string) => {
+    console.log("=== REVOGANDO ACESSO GERAL ===");
+    console.log("Usuário ID:", userId);
+    
     const updatedUsers = users.map(user => {
       if (user.id === userId) {
-        return { ...user, canApprove: false };
+        const updatedUser = { 
+          ...user, 
+          canApprove: false,
+          permissions: {
+            canDistribute: false,
+            canRelease: false,
+            canAdjustStock: false
+          }
+        };
+        console.log("Usuário com acesso revogado:", updatedUser);
+        return updatedUser;
       }
       return user;
     });
