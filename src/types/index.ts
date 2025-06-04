@@ -31,6 +31,12 @@ export interface DistributionRecord {
   locationId: string; // ID do local responsável
 }
 
+export interface UserPermissions {
+  canDistribute: boolean;
+  canRelease: boolean;
+  canAdjustStock: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -44,6 +50,7 @@ export interface User {
   createdAt: string;
   status: 'active' | 'inactive';
   phone?: string; // Campo de telefone do usuário
+  permissions?: UserPermissions; // Permissões específicas do usuário
 }
 
 export type UserRole = 'admin' | 'user' | 'pharmacist' | 'distributor' | 'health_unit';
