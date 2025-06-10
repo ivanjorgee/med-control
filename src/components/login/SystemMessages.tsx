@@ -12,7 +12,7 @@ export function SystemMessages() {
     {
       id: 2,
       title: "Manutenção preventiva",
-      description: "O sistema ficará indisponível dia 20/05 das 22h às 23h",
+      description: "O sistema ficará indisponível dia 30/06 das 22h às 23h",
       date: "18/05/2025"
     }
   ]);
