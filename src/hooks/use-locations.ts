@@ -38,7 +38,23 @@ export const useLocations = () => {
       }
 
       console.log("Unidades carregadas do Supabase:", supabaseLocations);
-      setLocations(supabaseLocations || []);
+      
+      // Mapear dados do Supabase para o formato Location
+      const mappedLocations: Location[] = (supabaseLocations || []).map(loc => ({
+        id: loc.id,
+        name: loc.name,
+        type: loc.type as Location['type'],
+        address: loc.address || "",
+        city: loc.city || "",
+        state: loc.state || "",
+        phone: loc.phone || "",
+        email: loc.email || "",
+        coordinator: loc.coordinator || "",
+        createdAt: loc.created_at || new Date().toISOString(),
+        status: loc.status as Location['status']
+      }));
+      
+      setLocations(mappedLocations);
     } catch (error) {
       console.error("Erro ao carregar unidades:", error);
       // Fallback para localStorage em caso de erro
@@ -163,7 +179,21 @@ export const useLocations = () => {
         }
 
         console.log("Unidade inserida no Supabase:", data);
-        supabaseLocation = data;
+        
+        // Mapear resposta do Supabase para formato Location
+        supabaseLocation = {
+          id: data.id,
+          name: data.name,
+          type: data.type as Location['type'],
+          address: data.address || "",
+          city: data.city || "",
+          state: data.state || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          coordinator: data.coordinator || "",
+          createdAt: data.created_at || new Date().toISOString(),
+          status: data.status as Location['status']
+        };
       } else {
         // Atualizar unidade existente no Supabase
         console.log("Atualizando unidade no Supabase:", savedLocation);
@@ -192,7 +222,21 @@ export const useLocations = () => {
         }
 
         console.log("Unidade atualizada no Supabase:", data);
-        supabaseLocation = data;
+        
+        // Mapear resposta do Supabase para formato Location
+        supabaseLocation = {
+          id: data.id,
+          name: data.name,
+          type: data.type as Location['type'],
+          address: data.address || "",
+          city: data.city || "",
+          state: data.state || "",
+          phone: data.phone || "",
+          email: data.email || "",
+          coordinator: data.coordinator || "",
+          createdAt: data.created_at || savedLocation.createdAt,
+          status: data.status as Location['status']
+        };
       }
 
       // Atualizar estado local
