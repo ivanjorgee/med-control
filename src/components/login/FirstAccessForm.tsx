@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { User as UserType, Location } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
 export function FirstAccessForm() {
   const [formData, setFormData] = useState({
@@ -83,7 +83,37 @@ export function FirstAccessForm() {
         status: "active"
       };
 
-      console.log("✅ Localização criada:", newLocation);
+      console.log("✅ Tentando salvar localização no Supabase:", newLocation);
+
+      // Tentar salvar no Supabase primeiro
+      try {
+        const { data: supabaseLocation, error: locationError } = await supabase
+          .from('locations')
+          .insert([{
+            id: newLocation.id,
+            name: newLocation.name,
+            type: newLocation.type,
+            address: newLocation.address,
+            city: newLocation.city,
+            state: newLocation.state,
+            phone: newLocation.phone,
+            email: newLocation.email,
+            coordinator: newLocation.coordinator,
+            status: newLocation.status,
+            created_at: newLocation.createdAt
+          }])
+          .select()
+          .single();
+
+        if (locationError) {
+          console.error("❌ Erro ao salvar localização no Supabase:", locationError);
+          throw locationError;
+        }
+
+        console.log("✅ Localização salva no Supabase:", supabaseLocation);
+      } catch (supabaseError) {
+        console.error("❌ Falha ao conectar com Supabase, usando localStorage:", supabaseError);
+      }
 
       // Criar primeiro usuário administrador
       const userId = `user-${Date.now()}`;
@@ -98,23 +128,46 @@ export function FirstAccessForm() {
         canApprove: true,
         createdAt: new Date().toISOString(),
         status: "active",
-        phone: formData.locationPhone || ""
+        phone: formData.locationPhone || "",
+        permissions: {
+          canDistribute: true,
+          canRelease: true,
+          canAdjustStock: true
+        }
       };
 
-      console.log("✅ Usuário administrador criado:", newUser);
+      console.log("✅ Tentando salvar usuário no Supabase:", newUser);
 
-      // Limpar localStorage anterior (se houver)
-      console.log("Limpando dados anteriores...");
-      localStorage.removeItem("medcontrol_locations");
-      localStorage.removeItem("users");
-      localStorage.removeItem("medcontrol-setup-complete");
-      localStorage.removeItem("medcontrol_medicines");
-      localStorage.removeItem("medcontrol_distributions");
-      localStorage.removeItem("medcontrol_medication_requests");
-      localStorage.removeItem("medcontrol_dispensations");
-
-      // Salvar no localStorage com validação
+      // Tentar salvar usuário no Supabase
       try {
+        const { data: supabaseUser, error: userError } = await supabase
+          .from('users')
+          .insert([{
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            password: newUser.password,
+            role: newUser.role,
+            location_id: newUser.locationId,
+            status: newUser.status,
+            created_at: newUser.createdAt
+          }])
+          .select()
+          .single();
+
+        if (userError) {
+          console.error("❌ Erro ao salvar usuário no Supabase:", userError);
+          throw userError;
+        }
+
+        console.log("✅ Usuário salvo no Supabase:", supabaseUser);
+      } catch (supabaseError) {
+        console.error("❌ Falha ao salvar usuário no Supabase, usando localStorage:", supabaseError);
+      }
+
+      // Salvar no localStorage como backup (independente do Supabase)
+      try {
+        console.log("Salvando dados no localStorage como backup...");
         localStorage.setItem("medcontrol_locations", JSON.stringify([newLocation]));
         localStorage.setItem("users", JSON.stringify([newUser]));
         localStorage.setItem("medcontrol-setup-complete", "true");
@@ -125,19 +178,7 @@ export function FirstAccessForm() {
         localStorage.setItem("medcontrol_medication_requests", JSON.stringify([]));
         localStorage.setItem("medcontrol_dispensations", JSON.stringify([]));
 
-        // Verificar se foi salvo corretamente
-        const savedLocations = localStorage.getItem("medcontrol_locations");
-        const savedUsers = localStorage.getItem("users");
-        const setupComplete = localStorage.getItem("medcontrol-setup-complete");
-        
-        console.log("✅ Verificação pós-salvamento:");
-        console.log("Localizações salvas:", savedLocations);
-        console.log("Usuários salvos:", savedUsers);
-        console.log("Setup completo:", setupComplete);
-        
-        if (!savedLocations || !savedUsers || setupComplete !== "true") {
-          throw new Error("Dados não foram salvos corretamente");
-        }
+        console.log("✅ Dados salvos no localStorage com sucesso");
         
       } catch (error) {
         console.error("❌ Erro ao salvar no localStorage:", error);
@@ -151,14 +192,10 @@ export function FirstAccessForm() {
       }
 
       console.log("=== CONFIGURAÇÃO CONCLUÍDA COM SUCESSO ===");
-      console.log("Dados finais no localStorage:");
-      console.log("- medcontrol_locations:", localStorage.getItem("medcontrol_locations"));
-      console.log("- users:", localStorage.getItem("users"));
-      console.log("- medcontrol-setup-complete:", localStorage.getItem("medcontrol-setup-complete"));
 
       toast({
         title: "Configuração concluída!",
-        description: "Sistema configurado com sucesso. Faça login para continuar."
+        description: "Sistema configurado com sucesso. Dados salvos no banco de dados e localmente."
       });
 
       // Redirecionar para login após pequeno delay

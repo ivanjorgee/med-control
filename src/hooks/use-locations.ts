@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { Location } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from "uuid";
 
 const STORAGE_KEY = "medcontrol_locations";
@@ -16,74 +17,103 @@ export const useLocations = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Loading locations from localStorage
-    const loadLocations = async () => {
-      try {
-        setIsLoading(true);
-        const storedLocations = localStorage.getItem(STORAGE_KEY);
-        
-        if (storedLocations) {
-          try {
-            const parsedLocations = JSON.parse(storedLocations);
-            console.log("Localizações carregadas do localStorage:", parsedLocations);
-            
-            // Validar e limpar dados se necessário
-            const validLocations = parsedLocations.filter((loc: any) => {
-              if (!loc.id || !loc.name) {
-                console.warn("Localização inválida encontrada:", loc);
-                return false;
-              }
-              
-              // Garantir que createdAt existe e é válido
-              if (!loc.createdAt || loc.createdAt === 'undefined' || loc.createdAt === 'null') {
-                console.log("Corrigindo createdAt para localização:", loc.name);
-                loc.createdAt = new Date().toISOString();
-              }
-              
-              return true;
-            });
-            
-            setLocations(validLocations);
-            
-            // Se os dados foram corrigidos, salva de volta
-            if (validLocations.length !== parsedLocations.length || 
-                validLocations.some((loc: any, index: number) => loc.createdAt !== parsedLocations[index]?.createdAt)) {
-              console.log("Salvando localizações corrigidas...");
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(validLocations));
-            }
-          } catch (parseError) {
-            console.error("Erro ao fazer parse das localizações:", parseError);
-            // Se há erro no parse, inicializa com array vazio
-            setLocations([]);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-          }
-        } else {
-          // Initialize with empty array instead of mock data
-          setLocations([]);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify([]));
-        }
-      } catch (error) {
-        console.error("Erro ao carregar locais:", error);
-        setLocations([]);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
     loadLocations();
   }, []);
 
+  const loadLocations = async () => {
+    try {
+      setIsLoading(true);
+      console.log("Carregando unidades do Supabase...");
+      
+      const { data: supabaseLocations, error } = await supabase
+        .from('locations')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error("Erro ao carregar do Supabase:", error);
+        // Fallback para localStorage se Supabase falhar
+        await loadFromLocalStorage();
+        return;
+      }
+
+      console.log("Unidades carregadas do Supabase:", supabaseLocations);
+      setLocations(supabaseLocations || []);
+    } catch (error) {
+      console.error("Erro ao carregar unidades:", error);
+      // Fallback para localStorage em caso de erro
+      await loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadFromLocalStorage = async () => {
+    try {
+      const storedLocations = localStorage.getItem(STORAGE_KEY);
+      
+      if (storedLocations) {
+        const parsedLocations = JSON.parse(storedLocations);
+        console.log("Carregando do localStorage como fallback:", parsedLocations);
+        
+        const validLocations = parsedLocations.filter((loc: any) => {
+          if (!loc.id || !loc.name) {
+            console.warn("Localização inválida encontrada:", loc);
+            return false;
+          }
+          
+          if (!loc.createdAt || loc.createdAt === 'undefined' || loc.createdAt === 'null') {
+            console.log("Corrigindo createdAt para localização:", loc.name);
+            loc.createdAt = new Date().toISOString();
+          }
+          
+          return true;
+        });
+        
+        setLocations(validLocations);
+      } else {
+        setLocations([]);
+      }
+    } catch (error) {
+      console.error("Erro ao carregar do localStorage:", error);
+      setLocations([]);
+    }
+  };
+
   const handleDelete = async (locationId: string) => {
     try {
+      console.log("Excluindo unidade:", locationId);
+      
+      // Tentar deletar do Supabase primeiro
+      const { error } = await supabase
+        .from('locations')
+        .delete()
+        .eq('id', locationId);
+
+      if (error) {
+        console.error("Erro ao deletar do Supabase:", error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao excluir unidade",
+          description: "Ocorreu um erro ao tentar excluir a unidade do banco de dados.",
+        });
+        return;
+      }
+
+      // Atualizar estado local
       const updatedLocations = locations.filter(loc => loc.id !== locationId);
       setLocations(updatedLocations);
+      
+      // Também remover do localStorage como backup
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
       
+      console.log("Unidade excluída com sucesso do Supabase");
       toast({
         title: "Unidade excluída",
         description: "A unidade foi removida com sucesso.",
       });
     } catch (error) {
+      console.error("Erro ao excluir unidade:", error);
       toast({
         variant: "destructive",
         title: "Erro ao excluir unidade",
@@ -92,31 +122,129 @@ export const useLocations = () => {
     }
   };
   
-  const handleLocationSaved = (savedLocation: Location) => {
-    const isNew = !locations.some(loc => loc.id === savedLocation.id);
-    let updatedLocations: Location[];
-    
-    if (isNew) {
-      // Generate a new ID if it's a newly created location
-      const newLocation = {
-        ...savedLocation,
-        id: savedLocation.id || `loc-${uuidv4()}`,
-        createdAt: savedLocation.createdAt || new Date().toISOString()
-      };
-      updatedLocations = [...locations, newLocation];
-    } else {
-      updatedLocations = locations.map(loc => 
-        loc.id === savedLocation.id ? savedLocation : loc
-      );
+  const handleLocationSaved = async (savedLocation: Location) => {
+    try {
+      const isNew = !locations.some(loc => loc.id === savedLocation.id);
+      console.log("Salvando unidade:", savedLocation, "É nova:", isNew);
+      
+      let supabaseLocation;
+      
+      if (isNew) {
+        // Criar nova unidade no Supabase
+        const newLocation = {
+          ...savedLocation,
+          id: savedLocation.id || uuidv4(),
+          created_at: savedLocation.createdAt || new Date().toISOString()
+        };
+        
+        console.log("Inserindo nova unidade no Supabase:", newLocation);
+        
+        const { data, error } = await supabase
+          .from('locations')
+          .insert([{
+            id: newLocation.id,
+            name: newLocation.name,
+            type: newLocation.type,
+            address: newLocation.address,
+            city: newLocation.city,
+            state: newLocation.state,
+            phone: newLocation.phone,
+            email: newLocation.email,
+            coordinator: newLocation.coordinator,
+            status: newLocation.status,
+            created_at: newLocation.createdAt
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Erro ao inserir no Supabase:", error);
+          throw error;
+        }
+
+        console.log("Unidade inserida no Supabase:", data);
+        supabaseLocation = data;
+      } else {
+        // Atualizar unidade existente no Supabase
+        console.log("Atualizando unidade no Supabase:", savedLocation);
+        
+        const { data, error } = await supabase
+          .from('locations')
+          .update({
+            name: savedLocation.name,
+            type: savedLocation.type,
+            address: savedLocation.address,
+            city: savedLocation.city,
+            state: savedLocation.state,
+            phone: savedLocation.phone,
+            email: savedLocation.email,
+            coordinator: savedLocation.coordinator,
+            status: savedLocation.status,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', savedLocation.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Erro ao atualizar no Supabase:", error);
+          throw error;
+        }
+
+        console.log("Unidade atualizada no Supabase:", data);
+        supabaseLocation = data;
+      }
+
+      // Atualizar estado local
+      let updatedLocations: Location[];
+      if (isNew) {
+        updatedLocations = [...locations, supabaseLocation];
+      } else {
+        updatedLocations = locations.map(loc => 
+          loc.id === savedLocation.id ? supabaseLocation : loc
+        );
+      }
+      
+      setLocations(updatedLocations);
+      
+      // Também salvar no localStorage como backup
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
+      
+      console.log("Unidade salva com sucesso!");
+      toast({
+        title: isNew ? "Unidade criada" : "Unidade atualizada",
+        description: `${savedLocation.name} foi ${isNew ? "adicionada" : "atualizada"} com sucesso no banco de dados.`
+      });
+      
+    } catch (error) {
+      console.error("Erro ao salvar unidade:", error);
+      
+      // Em caso de erro, tentar salvar no localStorage como fallback
+      const isNew = !locations.some(loc => loc.id === savedLocation.id);
+      let updatedLocations: Location[];
+      
+      if (isNew) {
+        const newLocation = {
+          ...savedLocation,
+          id: savedLocation.id || `loc-${uuidv4()}`,
+          createdAt: savedLocation.createdAt || new Date().toISOString()
+        };
+        updatedLocations = [...locations, newLocation];
+      } else {
+        updatedLocations = locations.map(loc => 
+          loc.id === savedLocation.id ? savedLocation : loc
+        );
+      }
+      
+      setLocations(updatedLocations);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
+      
+      toast({
+        variant: "destructive",
+        title: "Erro no banco de dados",
+        description: `Não foi possível salvar no banco. Dados salvos localmente como backup.`
+      });
     }
-    
-    setLocations(updatedLocations);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
-    
-    toast({
-      title: isNew ? "Unidade criada" : "Unidade atualizada",
-      description: `${savedLocation.name} foi ${isNew ? "adicionada" : "atualizada"} com sucesso.`
-    });
   };
 
   const filteredLocations = locations.filter((location) => {
