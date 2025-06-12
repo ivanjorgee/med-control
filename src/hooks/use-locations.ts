@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Location } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -32,7 +31,6 @@ export const useLocations = () => {
 
       if (error) {
         console.error("Erro ao carregar do Supabase:", error);
-        // Fallback para localStorage se Supabase falhar
         await loadFromLocalStorage();
         return;
       }
@@ -57,7 +55,6 @@ export const useLocations = () => {
       setLocations(mappedLocations);
     } catch (error) {
       console.error("Erro ao carregar unidades:", error);
-      // Fallback para localStorage em caso de erro
       await loadFromLocalStorage();
     } finally {
       setIsLoading(false);
@@ -100,7 +97,6 @@ export const useLocations = () => {
     try {
       console.log("Excluindo unidade:", locationId);
       
-      // Tentar deletar do Supabase primeiro
       const { error } = await supabase
         .from('locations')
         .delete()
@@ -116,11 +112,8 @@ export const useLocations = () => {
         return;
       }
 
-      // Atualizar estado local
       const updatedLocations = locations.filter(loc => loc.id !== locationId);
       setLocations(updatedLocations);
-      
-      // Também remover do localStorage como backup
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
       
       console.log("Unidade excluída com sucesso do Supabase");
@@ -143,32 +136,30 @@ export const useLocations = () => {
       const isNew = !locations.some(loc => loc.id === savedLocation.id);
       console.log("Salvando unidade:", savedLocation, "É nova:", isNew);
       
+      // Garantir que temos um ID válido
+      if (!savedLocation.id) {
+        savedLocation.id = uuidv4();
+      }
+      
       let supabaseLocation;
       
       if (isNew) {
-        // Criar nova unidade no Supabase - usar UUID válido sem prefixo
-        const newLocation = {
-          ...savedLocation,
-          id: savedLocation.id || uuidv4(), // UUID sem prefixo
-          created_at: savedLocation.createdAt || new Date().toISOString()
-        };
-        
-        console.log("Inserindo nova unidade no Supabase:", newLocation);
+        console.log("Inserindo nova unidade no Supabase:", savedLocation);
         
         const { data, error } = await supabase
           .from('locations')
           .insert([{
-            id: newLocation.id,
-            name: newLocation.name,
-            type: newLocation.type,
-            address: newLocation.address,
-            city: newLocation.city,
-            state: newLocation.state,
-            phone: newLocation.phone,
-            email: newLocation.email,
-            coordinator: newLocation.coordinator,
-            status: newLocation.status,
-            created_at: newLocation.createdAt
+            id: savedLocation.id,
+            name: savedLocation.name,
+            type: savedLocation.type,
+            address: savedLocation.address,
+            city: savedLocation.city,
+            state: savedLocation.state,
+            phone: savedLocation.phone,
+            email: savedLocation.email,
+            coordinator: savedLocation.coordinator,
+            status: savedLocation.status,
+            created_at: savedLocation.createdAt || new Date().toISOString()
           }])
           .select()
           .single();
@@ -179,8 +170,6 @@ export const useLocations = () => {
         }
 
         console.log("Unidade inserida no Supabase:", data);
-        
-        // Mapear resposta do Supabase para formato Location
         supabaseLocation = {
           id: data.id,
           name: data.name,
@@ -195,7 +184,6 @@ export const useLocations = () => {
           status: data.status as Location['status']
         };
       } else {
-        // Atualizar unidade existente no Supabase
         console.log("Atualizando unidade no Supabase:", savedLocation);
         
         const { data, error } = await supabase
@@ -222,8 +210,6 @@ export const useLocations = () => {
         }
 
         console.log("Unidade atualizada no Supabase:", data);
-        
-        // Mapear resposta do Supabase para formato Location
         supabaseLocation = {
           id: data.id,
           name: data.name,
@@ -239,7 +225,6 @@ export const useLocations = () => {
         };
       }
 
-      // Atualizar estado local
       let updatedLocations: Location[];
       if (isNew) {
         updatedLocations = [...locations, supabaseLocation];
@@ -250,43 +235,21 @@ export const useLocations = () => {
       }
       
       setLocations(updatedLocations);
-      
-      // Também salvar no localStorage como backup
       localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
       
       console.log("Unidade salva com sucesso!");
       toast({
         title: isNew ? "Unidade criada" : "Unidade atualizada",
-        description: `${savedLocation.name} foi ${isNew ? "adicionada" : "atualizada"} com sucesso no banco de dados.`
+        description: `${savedLocation.name} foi ${isNew ? "adicionada" : "atualizada"} com sucesso.`
       });
       
     } catch (error) {
       console.error("Erro ao salvar unidade:", error);
       
-      // Em caso de erro, tentar salvar no localStorage como fallback
-      const isNew = !locations.some(loc => loc.id === savedLocation.id);
-      let updatedLocations: Location[];
-      
-      if (isNew) {
-        const newLocation = {
-          ...savedLocation,
-          id: savedLocation.id || uuidv4(), // UUID sem prefixo
-          createdAt: savedLocation.createdAt || new Date().toISOString()
-        };
-        updatedLocations = [...locations, newLocation];
-      } else {
-        updatedLocations = locations.map(loc => 
-          loc.id === savedLocation.id ? savedLocation : loc
-        );
-      }
-      
-      setLocations(updatedLocations);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocations));
-      
       toast({
         variant: "destructive",
-        title: "Erro no banco de dados",
-        description: `Não foi possível salvar no banco. Dados salvos localmente como backup.`
+        title: "Erro ao salvar unidade",
+        description: "Ocorreu um erro ao tentar salvar a unidade no banco de dados."
       });
     }
   };

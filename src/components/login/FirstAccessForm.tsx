@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -70,7 +69,7 @@ export function FirstAccessForm() {
       }
 
       // Criar primeira localização com UUID válido
-      const locationId = uuidv4(); // UUID sem prefixo
+      const locationId = uuidv4();
       const newLocation: Location = {
         id: locationId,
         name: formData.locationName,
@@ -87,7 +86,6 @@ export function FirstAccessForm() {
 
       console.log("✅ Tentando salvar localização no Supabase:", newLocation);
 
-      // Tentar salvar no Supabase primeiro
       try {
         const { data: supabaseLocation, error: locationError } = await supabase
           .from('locations')
@@ -115,10 +113,11 @@ export function FirstAccessForm() {
         console.log("✅ Localização salva no Supabase:", supabaseLocation);
       } catch (supabaseError) {
         console.error("❌ Falha ao conectar com Supabase, usando localStorage:", supabaseError);
+        // Continuar com localStorage como fallback
       }
 
       // Criar primeiro usuário administrador com UUID válido
-      const userId = uuidv4(); // UUID sem prefixo
+      const userId = uuidv4();
       const newUser: UserType = {
         id: userId,
         name: formData.name,
@@ -140,7 +139,6 @@ export function FirstAccessForm() {
 
       console.log("✅ Tentando salvar usuário no Supabase:", newUser);
 
-      // Tentar salvar usuário no Supabase
       try {
         const { data: supabaseUser, error: userError } = await supabase
           .from('users')
@@ -167,14 +165,13 @@ export function FirstAccessForm() {
         console.error("❌ Falha ao salvar usuário no Supabase, usando localStorage:", supabaseError);
       }
 
-      // Salvar no localStorage como backup (independente do Supabase)
+      // Salvar no localStorage como backup
       try {
         console.log("Salvando dados no localStorage como backup...");
         localStorage.setItem("medcontrol_locations", JSON.stringify([newLocation]));
         localStorage.setItem("users", JSON.stringify([newUser]));
         localStorage.setItem("medcontrol-setup-complete", "true");
         
-        // Inicializar outras estruturas de dados vazias
         localStorage.setItem("medcontrol_medicines", JSON.stringify([]));
         localStorage.setItem("medcontrol_distributions", JSON.stringify([]));
         localStorage.setItem("medcontrol_medication_requests", JSON.stringify([]));
@@ -197,10 +194,9 @@ export function FirstAccessForm() {
 
       toast({
         title: "Configuração concluída!",
-        description: "Sistema configurado com sucesso. Dados salvos no banco de dados e localmente."
+        description: "Sistema configurado com sucesso. Dados salvos no banco de dados."
       });
 
-      // Redirecionar para login após pequeno delay
       setTimeout(() => {
         navigate("/login");
       }, 1000);
