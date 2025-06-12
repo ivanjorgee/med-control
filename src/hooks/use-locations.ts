@@ -146,10 +146,10 @@ export const useLocations = () => {
       let supabaseLocation;
       
       if (isNew) {
-        // Criar nova unidade no Supabase
+        // Criar nova unidade no Supabase - usar UUID válido sem prefixo
         const newLocation = {
           ...savedLocation,
-          id: savedLocation.id || uuidv4(),
+          id: savedLocation.id || uuidv4(), // UUID sem prefixo
           created_at: savedLocation.createdAt || new Date().toISOString()
         };
         
@@ -270,7 +270,7 @@ export const useLocations = () => {
       if (isNew) {
         const newLocation = {
           ...savedLocation,
-          id: savedLocation.id || `loc-${uuidv4()}`,
+          id: savedLocation.id || uuidv4(), // UUID sem prefixo
           createdAt: savedLocation.createdAt || new Date().toISOString()
         };
         updatedLocations = [...locations, newLocation];

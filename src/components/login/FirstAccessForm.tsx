@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { User as UserType, Location } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
+import { v4 as uuidv4 } from "uuid";
 
 export function FirstAccessForm() {
   const [formData, setFormData] = useState({
@@ -67,8 +69,8 @@ export function FirstAccessForm() {
         return;
       }
 
-      // Criar primeira localização
-      const locationId = `location-${Date.now()}`;
+      // Criar primeira localização com UUID válido
+      const locationId = uuidv4(); // UUID sem prefixo
       const newLocation: Location = {
         id: locationId,
         name: formData.locationName,
@@ -115,8 +117,8 @@ export function FirstAccessForm() {
         console.error("❌ Falha ao conectar com Supabase, usando localStorage:", supabaseError);
       }
 
-      // Criar primeiro usuário administrador
-      const userId = `user-${Date.now()}`;
+      // Criar primeiro usuário administrador com UUID válido
+      const userId = uuidv4(); // UUID sem prefixo
       const newUser: UserType = {
         id: userId,
         name: formData.name,

@@ -25,9 +25,9 @@ export function LocationDialog({ location, isEditing = false, onLocationSaved, t
   const [open, setOpen] = useState(false);
 
   const handleLocationSubmit = (savedLocation: Location) => {
-    // If it's a new location, generate an ID
+    // If it's a new location, generate a valid UUID without prefix
     if (!isEditing || !savedLocation.id) {
-      savedLocation.id = `loc-${uuidv4()}`;
+      savedLocation.id = uuidv4(); // UUID sem prefixo
     }
     
     // Pass the saved location to the parent component
