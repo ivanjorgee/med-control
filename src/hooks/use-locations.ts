@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Location } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +32,9 @@ export const useLocations = () => {
 
       if (error) {
         console.error("Erro ao carregar do Supabase:", error);
-        await loadFromLocalStorage();
+        // Se houver erro, limpar localStorage e usar dados vazios
+        localStorage.removeItem(STORAGE_KEY);
+        setLocations([]);
         return;
       }
 
@@ -53,43 +56,16 @@ export const useLocations = () => {
       }));
       
       setLocations(mappedLocations);
+      // Sincronizar com localStorage
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(mappedLocations));
+      
     } catch (error) {
       console.error("Erro ao carregar unidades:", error);
-      await loadFromLocalStorage();
+      // Em caso de erro, limpar localStorage
+      localStorage.removeItem(STORAGE_KEY);
+      setLocations([]);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const loadFromLocalStorage = async () => {
-    try {
-      const storedLocations = localStorage.getItem(STORAGE_KEY);
-      
-      if (storedLocations) {
-        const parsedLocations = JSON.parse(storedLocations);
-        console.log("Carregando do localStorage como fallback:", parsedLocations);
-        
-        const validLocations = parsedLocations.filter((loc: any) => {
-          if (!loc.id || !loc.name) {
-            console.warn("Localização inválida encontrada:", loc);
-            return false;
-          }
-          
-          if (!loc.createdAt || loc.createdAt === 'undefined' || loc.createdAt === 'null') {
-            console.log("Corrigindo createdAt para localização:", loc.name);
-            loc.createdAt = new Date().toISOString();
-          }
-          
-          return true;
-        });
-        
-        setLocations(validLocations);
-      } else {
-        setLocations([]);
-      }
-    } catch (error) {
-      console.error("Erro ao carregar do localStorage:", error);
-      setLocations([]);
     }
   };
 
