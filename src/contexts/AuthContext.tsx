@@ -17,26 +17,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initializeAuth = async () => {
       console.log("🚀 Inicializando sistema de autenticação...");
       
-      // Inicializar dados padrão primeiro
-      await initializeDefaultData();
-      
-      // Forçar atualização dos dados de usuário para garantir consistência
-      await forceUpdateUserData();
-      
-      // Forçar atualização dos dados de localização para garantir consistência
-      await forceUpdateLocationData();
-      
-      // Check if user is authenticated when component mounts
-      const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
-      
-      if (stored && user) {
-        setIsAuthenticated(true);
-        setAuthUser(user);
-        console.log("✅ Usuário já autenticado:", user);
+      try {
+        // Verificar autenticação existente primeiro
+        const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
+        
+        if (stored && user) {
+          setIsAuthenticated(true);
+          setAuthUser(user);
+          console.log("✅ Usuário já autenticado:", user);
+        }
+        
+        // Inicializar dados padrão de forma assíncrona (não bloqueia o login)
+        await initializeDefaultData();
+        
+        // Atualizar dados de usuário e localização
+        await forceUpdateUserData();
+        await forceUpdateLocationData();
+        
+      } catch (error) {
+        console.error("❌ Erro na inicialização:", error);
+      } finally {
+        setIsLoading(false);
+        console.log("✅ Sistema de autenticação inicializado");
       }
-      
-      setIsLoading(false);
-      console.log("✅ Sistema de autenticação inicializado");
     };
 
     initializeAuth();

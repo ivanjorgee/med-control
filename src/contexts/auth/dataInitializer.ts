@@ -3,109 +3,113 @@ import { DefaultUser, DefaultLocation } from "./types";
 import { supabase } from "@/integrations/supabase/client";
 
 export const initializeDefaultData = async () => {
-  console.log("🚀 Inicializando dados padrão do sistema...");
+  console.log("🚀 Verificando inicialização do sistema...");
   
   try {
     // Verificar se já temos dados inicializados
     const setupComplete = localStorage.getItem("medcontrol-setup-complete");
     if (setupComplete === "true") {
-      console.log("✅ Sistema já inicializado");
-      return;
+      console.log("✅ Sistema já inicializado - verificando consistência dos dados");
+      
+      // Verificar se temos usuários no localStorage
+      const localUsers = localStorage.getItem("users");
+      const localLocations = localStorage.getItem("medcontrol_locations");
+      
+      if (localUsers && localLocations) {
+        const users = JSON.parse(localUsers);
+        const locations = JSON.parse(localLocations);
+        
+        if (users.length > 0 && locations.length > 0) {
+          console.log("✅ Dados locais consistentes, sistema já configurado");
+          return;
+        }
+      }
+      
+      console.log("⚠️ Setup marcado como completo mas dados inconsistentes, recarregando do banco...");
     }
 
-    // Buscar a unidade central do Supabase
+    // Buscar dados do banco de dados para verificar se já existe configuração
     const { data: locations, error: locationsError } = await supabase
       .from('locations')
       .select('*')
-      .eq('name', 'Secretaria Municipal de Saúde - Unidade Central')
       .limit(1);
 
     if (locationsError) {
-      console.error("❌ Erro ao buscar unidade central:", locationsError);
+      console.error("❌ Erro ao verificar unidades:", locationsError);
       return;
     }
 
-    if (!locations || locations.length === 0) {
-      console.warn("⚠️ Unidade central não encontrada no banco");
-      return;
-    }
-
-    const centralLocation = locations[0];
-    console.log("✅ Unidade central encontrada:", centralLocation);
-
-    // Verificar se já existe usuário admin no banco
-    const { data: existingUsers, error: usersError } = await supabase
+    const { data: users, error: usersError } = await supabase
       .from('users')
       .select('*')
-      .eq('email', 'smss.sjapa@gmail.com');
+      .eq('role', 'admin')
+      .limit(1);
 
     if (usersError) {
-      console.error("❌ Erro ao verificar usuários:", usersError);
+      console.error("❌ Erro ao verificar usuários admin:", usersError);
       return;
     }
 
-    let adminUser;
-    if (!existingUsers || existingUsers.length === 0) {
-      // Criar usuário administrador no banco
-      const { data: newAdmin, error: createError } = await supabase
+    // Se temos dados no banco, sincronizar e marcar como configurado
+    if (locations && locations.length > 0 && users && users.length > 0) {
+      console.log("✅ Sistema já configurado no banco, sincronizando dados locais...");
+      
+      // Sincronizar todos os usuários
+      const { data: allUsers, error: allUsersError } = await supabase
         .from('users')
-        .insert([{
-          name: 'Administrador do Sistema',
-          email: 'smss.sjapa@gmail.com',
-          password: 'admin123',
-          role: 'admin',
-          location_id: centralLocation.id,
-          status: 'active'
-        }])
-        .select()
-        .single();
+        .select('*');
 
-      if (createError) {
-        console.error("❌ Erro ao criar usuário admin:", createError);
-        return;
+      if (!allUsersError && allUsers) {
+        const formattedUsers = allUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          password: user.password,
+          role: user.role,
+          locationId: user.location_id,
+          healthUnit: "Unidade Central",
+          canApprove: user.role === "admin" || user.role === "pharmacist",
+          createdAt: user.created_at || new Date().toISOString(),
+          status: user.status,
+          phone: ""
+        }));
+
+        localStorage.setItem("users", JSON.stringify(formattedUsers));
       }
 
-      adminUser = newAdmin;
-      console.log("✅ Usuário administrador criado no banco");
-    } else {
-      adminUser = existingUsers[0];
-      console.log("✅ Usuário administrador já existe no banco");
+      // Sincronizar todas as unidades
+      const { data: allLocations, error: allLocationsError } = await supabase
+        .from('locations')
+        .select('*');
+
+      if (!allLocationsError && allLocations) {
+        const formattedLocations = allLocations.map(location => ({
+          id: location.id,
+          name: location.name,
+          type: location.type,
+          address: location.address || "",
+          city: location.city || "",
+          state: location.state || "",
+          phone: location.phone || "",
+          email: location.email || "",
+          coordinator: location.coordinator || "",
+          createdAt: location.created_at,
+          status: location.status,
+          coordinatorId: ""
+        }));
+
+        localStorage.setItem("medcontrol_locations", JSON.stringify(formattedLocations));
+      }
+
+      // Marcar como configurado
+      localStorage.setItem("medcontrol-setup-complete", "true");
+      console.log("✅ Sincronização concluída, sistema configurado");
+      return;
     }
 
-    // Sincronizar com localStorage para compatibilidade
-    const defaultUsers: DefaultUser[] = [{
-      id: adminUser.id,
-      name: adminUser.name,
-      email: adminUser.email,
-      password: adminUser.password,
-      role: adminUser.role as any,
-      locationId: adminUser.location_id,
-      status: adminUser.status
-    }];
-
-    const defaultLocations: DefaultLocation[] = [{
-      id: centralLocation.id,
-      name: centralLocation.name,
-      type: centralLocation.type,
-      address: centralLocation.address || "",
-      city: centralLocation.city || "",
-      state: centralLocation.state || "",
-      phone: centralLocation.phone || "",
-      email: centralLocation.email || "",
-      coordinator: centralLocation.coordinator || "",
-      createdAt: centralLocation.created_at,
-      status: centralLocation.status,
-      coordinatorId: adminUser.id
-    }];
-
-    // Salvar no localStorage
-    localStorage.setItem("users", JSON.stringify(defaultUsers));
-    localStorage.setItem("medcontrol_locations", JSON.stringify(defaultLocations));
-    localStorage.setItem("medcontrol-setup-complete", "true");
-
-    console.log("✅ Dados padrão inicializados com sucesso!");
+    console.log("⚠️ Sistema ainda não foi configurado");
     
   } catch (error) {
-    console.error("❌ Erro ao inicializar dados padrão:", error);
+    console.error("❌ Erro ao verificar inicialização:", error);
   }
 };
