@@ -1,3 +1,4 @@
+
 import { createContext, ReactNode, useContext, useState, useEffect } from "react";
 import { AuthUserData, AuthContextType } from "./auth/types";
 import { AuthService } from "./auth/authService";
@@ -13,24 +14,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Inicializar dados padrão primeiro
-    initializeDefaultData();
-    
-    // Forçar atualização dos dados de usuário para garantir consistência
-    forceUpdateUserData();
-    
-    // Forçar atualização dos dados de localização para garantir consistência
-    forceUpdateLocationData();
-    
-    // Check if user is authenticated when component mounts
-    const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
-    
-    if (stored && user) {
-      setIsAuthenticated(true);
-      setAuthUser(user);
-    }
-    
-    setIsLoading(false);
+    const initializeAuth = async () => {
+      console.log("🚀 Inicializando sistema de autenticação...");
+      
+      // Inicializar dados padrão primeiro
+      await initializeDefaultData();
+      
+      // Forçar atualização dos dados de usuário para garantir consistência
+      await forceUpdateUserData();
+      
+      // Forçar atualização dos dados de localização para garantir consistência
+      await forceUpdateLocationData();
+      
+      // Check if user is authenticated when component mounts
+      const { isAuthenticated: stored, user } = AuthService.getStoredAuth();
+      
+      if (stored && user) {
+        setIsAuthenticated(true);
+        setAuthUser(user);
+        console.log("✅ Usuário já autenticado:", user);
+      }
+      
+      setIsLoading(false);
+      console.log("✅ Sistema de autenticação inicializado");
+    };
+
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
