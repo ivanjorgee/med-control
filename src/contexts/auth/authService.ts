@@ -2,68 +2,12 @@
 import { AuthUserData } from "./types";
 import { UserRole } from "@/types";
 import { initializeDefaultData, getLocationName } from "./authUtils";
-import { supabase } from "@/integrations/supabase/client";
 
 export class AuthService {
   static async authenticateUser(email: string, password: string): Promise<{ success: boolean; user?: AuthUserData; error?: string }> {
     console.log("=== INICIANDO PROCESSO DE LOGIN ===");
     console.log("Email informado:", email);
     console.log("Senha informada:", password);
-    
-    try {
-      // Primeiro, tentar autenticar no banco de dados Supabase
-      const { data: dbUsers, error: dbError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .eq('password', password)
-        .eq('status', 'active')
-        .limit(1);
-
-      if (dbError) {
-        console.error("❌ Erro ao consultar banco:", dbError);
-        // Fallback para localStorage se houver erro no banco
-        return this.authenticateFromLocalStorage(email, password);
-      }
-
-      if (dbUsers && dbUsers.length > 0) {
-        const user = dbUsers[0];
-        console.log("✅ Usuário encontrado no banco:", user);
-        
-        // Buscar nome da unidade
-        const locationName = getLocationName(user.location_id);
-        
-        // Criar objeto de usuário autenticado
-        const authUserData: AuthUserData = {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role as UserRole,
-          locationId: user.location_id,
-          locationName: locationName
-        };
-        
-        console.log("✅ Dados do usuário autenticado:", authUserData);
-        
-        // Salvar no localStorage
-        localStorage.setItem("medcontrol-auth", "true");
-        localStorage.setItem("medcontrol-user", JSON.stringify(authUserData));
-        
-        console.log("=== LOGIN CONCLUÍDO COM SUCESSO (BANCO) ===");
-        return { success: true, user: authUserData };
-      } else {
-        console.log("❌ Usuário não encontrado no banco, tentando localStorage...");
-        return this.authenticateFromLocalStorage(email, password);
-      }
-      
-    } catch (error) {
-      console.error("❌ Erro durante autenticação:", error);
-      return this.authenticateFromLocalStorage(email, password);
-    }
-  }
-
-  private static async authenticateFromLocalStorage(email: string, password: string): Promise<{ success: boolean; user?: AuthUserData; error?: string }> {
-    console.log("🔄 Tentando autenticação via localStorage...");
     
     // Buscar usuários cadastrados no localStorage
     const storedUsers = localStorage.getItem("users");
@@ -72,7 +16,7 @@ export class AuthService {
     if (!storedUsers) {
       console.log("❌ Nenhum usuário encontrado no localStorage");
       // Inicializar dados padrão se não existirem
-      await initializeDefaultData();
+      initializeDefaultData();
       const newStoredUsers = localStorage.getItem("users");
       if (!newStoredUsers) {
         return { success: false, error: "Erro ao inicializar usuários do sistema." };
@@ -154,7 +98,7 @@ export class AuthService {
       return { success: false, error: "Erro ao salvar dados de autenticação." };
     }
     
-    console.log("=== LOGIN CONCLUÍDO COM SUCESSO (LOCALSTORAGE) ===");
+    console.log("=== LOGIN CONCLUÍDO COM SUCESSO ===");
     return { success: true, user: authUserData };
   }
 

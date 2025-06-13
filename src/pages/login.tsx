@@ -13,54 +13,25 @@ export default function LoginPage() {
 
   // Verificar se é o primeiro acesso
   useEffect(() => {
-    const checkSystemSetup = async () => {
-      console.log("🔍 Verificando configuração do sistema...");
-      
-      const setupComplete = localStorage.getItem("medcontrol-setup-complete");
-      const users = localStorage.getItem("users");
-      const locations = localStorage.getItem("medcontrol_locations");
-      
-      console.log("Setup complete:", setupComplete);
-      console.log("Users exist:", !!users);
-      console.log("Locations exist:", !!locations);
-      
-      // Só redireciona para first-access se realmente não estiver configurado
-      if (setupComplete !== "true") {
-        console.log("❌ Setup não marcado como completo, redirecionando para configuração inicial");
-        navigate("/first-access", { replace: true });
-        return;
-      }
-      
-      if (!users || !locations) {
-        console.log("❌ Dados ausentes, redirecionando para configuração inicial");
-        navigate("/first-access", { replace: true });
-        return;
-      }
-      
-      try {
-        const usersList = JSON.parse(users);
-        const locationsList = JSON.parse(locations);
-        
-        if (usersList.length === 0 || locationsList.length === 0) {
-          console.log("❌ Listas vazias, redirecionando para configuração inicial");
-          navigate("/first-access", { replace: true });
-          return;
-        }
-        
-        console.log("✅ Sistema configurado corretamente, permanecendo na página de login");
-      } catch (error) {
-        console.error("❌ Erro ao parsear dados:", error);
-        navigate("/first-access", { replace: true });
-      }
-    };
-
-    checkSystemSetup();
+    const setupComplete = localStorage.getItem("medcontrol-setup-complete");
+    const users = localStorage.getItem("users");
+    
+    if (setupComplete !== "true" || !users) {
+      navigate("/first-access", { replace: true });
+      return;
+    }
+    
+    const usersList = JSON.parse(users);
+    if (usersList.length === 0) {
+      navigate("/first-access", { replace: true });
+      return;
+    }
   }, [navigate]);
 
   // Redirecionar se já estiver autenticado
   useEffect(() => {
     if (isAuthenticated) {
-      console.log("✅ Usuário já autenticado, redirecionando...");
+      console.log("Usuário já autenticado, redirecionando...");
       const from = location.state?.from?.pathname || "/";
       navigate(from, { replace: true });
     }
