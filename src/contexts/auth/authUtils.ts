@@ -136,7 +136,7 @@ export const forceUpdateUserData = async () => {
         canApprove: user.role === "admin" || user.role === "pharmacist",
         createdAt: user.created_at || new Date().toISOString(),
         status: user.status,
-        phone: user.phone || ""
+        phone: "" // Campo phone não existe na tabela users do banco, definindo como string vazia
       }));
 
       localStorage.setItem("users", JSON.stringify(formattedUsers));
