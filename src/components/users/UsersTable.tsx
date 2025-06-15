@@ -1,4 +1,3 @@
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,9 +13,10 @@ interface UsersTableProps {
   locations: Location[];
   onDeleteUser: (userId: string) => void;
   onUpdateUser: (updatedUser: User) => void;
+  isLoading?: boolean;
 }
 
-export function UsersTable({ users, locations, onDeleteUser, onUpdateUser }: UsersTableProps) {
+export function UsersTable({ users, locations, onDeleteUser, onUpdateUser, isLoading = false }: UsersTableProps) {
   const { isAdmin } = useAuth();
 
   // Helper functions
@@ -50,6 +50,23 @@ export function UsersTable({ users, locations, onDeleteUser, onUpdateUser }: Use
     }
   };
   
+  if (isLoading) {
+    return (
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={8} className="text-center py-10">
+              <div className="flex flex-col items-center justify-center text-muted-foreground">
+                <UsersIcon className="h-12 w-12 mb-2 animate-spin" />
+                <h3 className="text-lg font-medium">Carregando usuários...</h3>
+              </div>
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      </Table>
+    );
+  }
+
   return (
     <Table>
       <TableHeader>
