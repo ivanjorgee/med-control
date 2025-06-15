@@ -1,4 +1,3 @@
-
 export interface Medicine {
   id: string;
   name: string;
@@ -78,6 +77,7 @@ export interface Location {
   coordinator: string;
   createdAt: string;
   status: 'active' | 'inactive';
+  cnes?: string; // Novo campo CNES
 }
 
 export type LocationType = 'hospital' | 'clinic' | 'pharmacy' | 'health_unit' | 'other';

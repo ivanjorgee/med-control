@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,7 @@ export function LocationForm({ location, isEditing, onLocationSaved, onCancel }:
     address: "",
     city: "",
     state: "",
+    cnes: "",
     phone: "",
     email: "",
     coordinator: "",
@@ -43,6 +43,7 @@ export function LocationForm({ location, isEditing, onLocationSaved, onCancel }:
         address: location.address,
         city: location.city,
         state: location.state,
+        cnes: location.cnes || "",
         phone: location.phone,
         email: location.email,
         coordinator: location.coordinator,
@@ -87,12 +88,12 @@ export function LocationForm({ location, isEditing, onLocationSaved, onCancel }:
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validação básica
-    if (!formData.name || !formData.city || !formData.state) {
+    // Validação básica (CNES, obrigatório 7 dígitos numéricos)
+    if (!formData.name || !formData.city || !formData.state || !formData.cnes || !/^\d{7}$/.test(formData.cnes)) {
       toast({
         variant: "destructive",
         title: "Dados incompletos",
-        description: "Preencha todos os campos obrigatórios.",
+        description: "Preencha todos os campos obrigatórios corretamente (incluindo CNES com 7 dígitos numéricos).",
       });
       return;
     }
@@ -105,6 +106,7 @@ export function LocationForm({ location, isEditing, onLocationSaved, onCancel }:
       address: formData.address,
       city: formData.city,
       state: formData.state,
+      cnes: formData.cnes,
       phone: formData.phone,
       email: formData.email,
       coordinator: formData.coordinator,
@@ -145,11 +147,12 @@ export function LocationForm({ location, isEditing, onLocationSaved, onCancel }:
           onChange={(value) => handleChange("type", value)}
           locationTypeLabels={locationTypeLabels}
         />
-        
-        <AddressFields 
+
+        <AddressFields
           address={formData.address}
           city={formData.city}
           state={formData.state}
+          cnes={formData.cnes}
           onChange={handleChange}
         />
         

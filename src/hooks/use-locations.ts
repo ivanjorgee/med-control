@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Location } from "@/types";
 import { useToast } from "@/hooks/use-toast";
@@ -52,7 +51,8 @@ export const useLocations = () => {
         email: loc.email || "",
         coordinator: loc.coordinator || "",
         createdAt: loc.created_at || new Date().toISOString(),
-        status: loc.status as Location['status']
+        status: loc.status as Location['status'],
+        cnes: loc.cnes || "",
       }));
       
       setLocations(mappedLocations);
@@ -135,7 +135,8 @@ export const useLocations = () => {
             email: savedLocation.email,
             coordinator: savedLocation.coordinator,
             status: savedLocation.status,
-            created_at: savedLocation.createdAt || new Date().toISOString()
+            created_at: savedLocation.createdAt || new Date().toISOString(),
+            cnes: savedLocation.cnes || null,
           }])
           .select()
           .single();
@@ -157,7 +158,8 @@ export const useLocations = () => {
           email: data.email || "",
           coordinator: data.coordinator || "",
           createdAt: data.created_at || new Date().toISOString(),
-          status: data.status as Location['status']
+          status: data.status as Location['status'],
+          cnes: data.cnes || "",
         };
       } else {
         console.log("Atualizando unidade no Supabase:", savedLocation);
@@ -174,7 +176,8 @@ export const useLocations = () => {
             email: savedLocation.email,
             coordinator: savedLocation.coordinator,
             status: savedLocation.status,
-            updated_at: new Date().toISOString()
+            updated_at: new Date().toISOString(),
+            cnes: savedLocation.cnes || null,
           })
           .eq('id', savedLocation.id)
           .select()
@@ -197,7 +200,8 @@ export const useLocations = () => {
           email: data.email || "",
           coordinator: data.coordinator || "",
           createdAt: data.created_at || savedLocation.createdAt,
-          status: data.status as Location['status']
+          status: data.status as Location['status'],
+          cnes: data.cnes || "",
         };
       }
 
