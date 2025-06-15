@@ -24,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       id: data.id,
       name: data.name,
       email: data.email,
-      role: data.role,
+      role: data.role as import("@/types").UserRole,
       locationId: data.location_id,
       locationName: "" // Pode buscar o nome da unidade se quiser
     };
