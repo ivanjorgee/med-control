@@ -37,20 +37,31 @@ export function useSupabaseUsers() {
       });
       setUsers([]);
     } else {
-      setUsers((data || []).map((u) => ({
-        ...u,
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        password: u.password,
-        healthUnit: "",
-        role: u.role as UserRole,
-        canApprove: false, // ajuste caso implemente permissões específicas
-        locationId: u.location_id ?? "",
-        createdAt: u.created_at,
-        status: u.status ?? "active",
-        phone: "", // se implementar no banco depois, troca por u.phone
-      })));
+      setUsers(
+        (data || []).map((u) => {
+          let status: "active" | "inactive" = "active";
+          if (u.status === "inactive") {
+            status = "inactive";
+          } else if (u.status === "active") {
+            status = "active";
+          }
+          // any other value (null, empty, unexpected), default to "active"
+          return {
+            ...u,
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            password: u.password,
+            healthUnit: "",
+            role: u.role as UserRole,
+            canApprove: false, // ajuste caso implemente permissões específicas
+            locationId: u.location_id ?? "",
+            createdAt: u.created_at,
+            status: status,
+            phone: "", // se implementar no banco depois, troca por u.phone
+          };
+        })
+      );
     }
     setLoading(false);
   };
