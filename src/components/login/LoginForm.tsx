@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -33,39 +32,31 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
-      console.log("Iniciando processo de login...");
       if (email && password) {
         if (rememberMe) {
           localStorage.setItem("medcontrol-email", email);
         } else {
           localStorage.removeItem("medcontrol-email");
         }
-        
-        console.log(`Tentando login com: ${email}`);
         const success = await login(email, password);
-        console.log("Resultado do login:", success);
-        
+
         if (success) {
           toast({
             title: "Sucesso!",
             description: "Login realizado com sucesso!"
           });
-          
-          // Redirecionar para a página anterior ou para o dashboard
           const from = location.state?.from?.pathname || "/";
-          console.log(`Redirecionando para: ${from}`);
           navigate(from, { replace: true });
         } else {
           toast({
             variant: "destructive",
             title: "Erro no login",
-            description: "Email ou senha incorretos."
+            description: "Email ou senha incorretos ou usuário não autorizado."
           });
         }
       } else {
-        console.log("Campos de login incompletos");
         toast({
           variant: "destructive",
           title: "Erro!",
@@ -73,7 +64,6 @@ export function LoginForm() {
         });
       }
     } catch (error) {
-      console.error("Erro durante o login:", error);
       toast({
         variant: "destructive",
         title: "Erro no login",
