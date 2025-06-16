@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,8 @@ export function FirstAccessForm() {
     locationName: "",
     locationAddress: "",
     locationCity: "",
-    locationPhone: ""
+    locationPhone: "",
+    locationCnes: ""
   });
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
@@ -27,6 +29,13 @@ export function FirstAccessForm() {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Validação e máscara para CNES (7 dígitos)
+  const handleCnesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Permite só números, limita a 7 chars
+    let value = e.target.value.replace(/\D/g, '').slice(0, 7);
+    setFormData(prev => ({ ...prev, locationCnes: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +47,7 @@ export function FirstAccessForm() {
       console.log("Dados do formulário:", formData);
       
       // Validações
-      if (!formData.name || !formData.email || !formData.password || !formData.locationName) {
+      if (!formData.name || !formData.email || !formData.password || !formData.locationName || !formData.locationCnes) {
         toast({
           variant: "destructive",
           title: "Erro!",
@@ -68,6 +77,17 @@ export function FirstAccessForm() {
         return;
       }
 
+      // Validação do CNES (deve ter exatamente 7 dígitos)
+      if (!/^\d{7}$/.test(formData.locationCnes)) {
+        toast({
+          variant: "destructive",
+          title: "Erro!",
+          description: "O CNES deve ter exatamente 7 dígitos numéricos."
+        });
+        setIsLoading(false);
+        return;
+      }
+
       // Criar primeira localização com UUID válido
       const locationId = uuidv4();
       const newLocation: Location = {
@@ -81,7 +101,8 @@ export function FirstAccessForm() {
         email: formData.email,
         coordinator: formData.name,
         createdAt: new Date().toISOString(),
-        status: "active"
+        status: "active",
+        cnes: formData.locationCnes
       };
 
       console.log("✅ Tentando salvar localização no Supabase:", newLocation);
@@ -100,7 +121,8 @@ export function FirstAccessForm() {
             email: newLocation.email,
             coordinator: newLocation.coordinator,
             status: newLocation.status,
-            created_at: newLocation.createdAt
+            created_at: newLocation.createdAt,
+            cnes: newLocation.cnes
           }])
           .select()
           .single();
@@ -319,6 +341,23 @@ export function FirstAccessForm() {
                 onChange={(e) => handleChange("locationName", e.target.value)}
                 className="border-gray-300 focus:ring-primary focus:border-primary"
                 required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="locationCnes" className="text-sm font-medium text-gray-700">
+                CNES *
+              </label>
+              <Input
+                id="locationCnes"
+                type="text"
+                placeholder="Somente números (7 dígitos)"
+                value={formData.locationCnes}
+                onChange={handleCnesChange}
+                className="border-gray-300 focus:ring-primary focus:border-primary"
+                required
+                pattern="\d{7}"
+                maxLength={7}
               />
             </div>
 
